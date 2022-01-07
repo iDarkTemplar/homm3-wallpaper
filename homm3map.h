@@ -12,7 +12,6 @@
 #include <set>
 #include <tuple>
 
-#include <QtCore/QAtomicInteger>
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 #include <QtGui/QOpenGLFunctions>
@@ -105,7 +104,7 @@ private:
 	};
 
 	QTimer m_frame_timer;
-	QAtomicInteger<int> m_need_update_animation;
+	bool m_need_update_animation;
 	std::map<AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
 	int m_level;
 	bool m_need_update_map;

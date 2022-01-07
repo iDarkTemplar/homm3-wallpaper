@@ -194,7 +194,7 @@ std::tuple<std::string, int, int> getRoadTile(const std::shared_ptr<CMap> &map, 
 Homm3MapRenderer::Homm3MapRenderer()
 	: QQuickFramebufferObject::Renderer()
 	, m_texture_id(0)
-	, m_need_update_animation(0)
+	, m_need_update_animation(false)
 	, m_level(0)
 	, m_need_update_map(true)
 {
@@ -268,8 +268,10 @@ void Homm3MapRenderer::render()
 {
 	prepareRenderData();
 
-	if (m_need_update_animation.fetchAndStoreOrdered(0))
+	if (m_need_update_animation)
 	{
+		m_need_update_animation = false;
+
 		updateAnimatedItems();
 	}
 
@@ -1006,7 +1008,7 @@ void Homm3MapRenderer::updateFrames()
 		iter->second = (iter->second + 1) % iter->first;
 	}
 
-	m_need_update_animation.storeRelease(1);
+	m_need_update_animation = true;
 }
 
 void Homm3MapRenderer::synchronize(QQuickFramebufferObject *item)
