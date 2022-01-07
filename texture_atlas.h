@@ -46,6 +46,8 @@ public:
 
 	std::pair<std::map<TextureItem, QRect>::const_iterator, std::map<TextureItem, QRect>::const_iterator> getAllItems() const;
 
+	void clear();
+
 private:
 	struct Line
 	{

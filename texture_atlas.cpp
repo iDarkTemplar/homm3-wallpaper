@@ -27,7 +27,7 @@ TextureAtlas::TextureAtlas()
 	: m_size(1024)
 	, m_current_height(0)
 {
-	insertItem(TextureItem("invalid"), QSize(tile_size, tile_size));
+	clear();
 }
 
 void TextureAtlas::insertItem(const TextureItem &item, const QSize &size)
@@ -99,4 +99,14 @@ size_t TextureAtlas::getSize() const
 std::pair<std::map<TextureItem, QRect>::const_iterator, std::map<TextureItem, QRect>::const_iterator> TextureAtlas::getAllItems() const
 {
 	return std::make_pair(m_texture_items.begin(), m_texture_items.end());
+}
+
+void TextureAtlas::clear()
+{
+	m_size = 1024;
+	m_current_height = 0;
+	m_current_lines.clear();
+	m_texture_items.clear();
+
+	insertItem(TextureItem("invalid"), QSize(tile_size, tile_size));
 }

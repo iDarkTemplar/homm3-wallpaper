@@ -317,6 +317,7 @@ void Homm3MapRenderer::prepareRenderData()
 		m_current_frames.clear();
 		m_vertices.clear();
 		m_texcoords.clear();
+		m_texture_atlas.clear();
 
 		// first load all images
 		std::map<std::tuple<std::string, int>, Def> defs_map;
