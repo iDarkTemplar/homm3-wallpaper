@@ -9,8 +9,11 @@ set (CMAKE_CXX_STANDARD 17)
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
+find_package(Qt5 COMPONENTS Core Quick REQUIRED)
+
 set (SOURCES
 	def_file.cpp
+	homm3_image_provider.cpp
 	main.cpp
 	lod_archive.cpp
 	random.cpp
@@ -22,6 +25,7 @@ set (SOURCES
 set(HEADERS
 	def_file.h
 	globals.h
+	homm3_image_provider.h
 	lod_archive.h
 	random.h
 	vcmi/CBinaryReader.h
@@ -31,10 +35,16 @@ set(HEADERS
 	vcmi/CStream.h
 	)
 
+set(RESOURCES
+	qml.qrc
+)
+
+qt_add_resources(COMPILED_RESOURCES ${RESOURCES})
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
-add_executable(homm3-wallpaper ${SOURCES} ${HEADERS})
-target_link_libraries(homm3-wallpaper ZLIB::ZLIB)
+add_executable(homm3-wallpaper ${SOURCES} ${HEADERS} ${COMPILED_RESOURCES})
+target_link_libraries(homm3-wallpaper ZLIB::ZLIB Qt5::Core Qt5::Quick)
 
 include(GNUInstallDirs)
 

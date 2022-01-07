@@ -10,37 +10,70 @@
 #include <inttypes.h>
 
 #include <filesystem>
+#include <map>
 #include <stdexcept>
+#include <tuple>
+
+#include <QtGui/QGuiApplication>
+#include <QtQml/QQmlApplicationEngine>
 
 #include "def_file.h"
+#include "homm3_image_provider.h"
 #include "lod_archive.h"
 
 #include "vcmi/CBinaryReader.h"
+#include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"
 
 int main(int argc, char **argv)
 {
-	for (int i = 1; i < argc; ++i)
+	try
 	{
-		printf("Reading archive: %s\n", argv[i]);
+		if (argc < 2)
+		{
+			fprintf(stderr, "ERROR: not enough arguments\n");
+			return -1;
+		}
 
-		try
+		std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
+
+		for (int i = 1; i < argc; ++i)
 		{
 			CFileInputStream file_stream(std::filesystem::path(argv[i]));
 			CBinaryReader reader(&file_stream);
 			std::vector<LodEntry> files = read_lod_archive_header(reader);
 
-			size_t j = 1;
-			for (auto iter = files.begin(); iter != files.end(); ++iter, ++j)
+			for (auto iter = files.begin(); iter != files.end(); ++iter)
 			{
-				printf("File %zu: %s, size %" PRIu32 ", type 0x%02x\n", j, iter->name.c_str(), iter->full_size, (int) iter->filetype);
+				lod_entries[iter->name] = std::tie(argv[i], *iter);
 			}
 		}
-		catch (const std::exception &e)
-		{
-			printf("Caught exception: %s\n", e.what());
-		}
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+
+		QGuiApplication app(argc, argv);
+
+		QQmlApplicationEngine engine;
+		const QUrl url(QStringLiteral("qrc:/main.qml"));
+
+		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider(lod_entries));
+
+		QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app, [url](QObject *obj, const QUrl &objUrl) {
+			if ((!obj) && (url == objUrl)) {
+				QCoreApplication::exit(-1);
+			}
+		}, Qt::QueuedConnection);
+
+		engine.load(url);
+
+		return app.exec();
+	}
+	catch (const std::exception &e)
+	{
+		printf("Caught exception: %s\n", e.what());
 	}
 
-	return 0;
+	return -1;
 }
