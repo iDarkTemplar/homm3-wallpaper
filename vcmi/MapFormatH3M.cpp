@@ -82,6 +82,406 @@ void CMapLoaderH3M::init()
 	readDefInfo();
 	readObjects();
 	readEvents();
+
+	// update town images
+	for (auto town_iter = m_townByPos.begin(); town_iter != m_townByPos.end(); ++town_iter)
+	{
+		if (town_iter->second->ID == Obj::TOWN)
+		{
+			town_iter->second->appearance.animationFile = towns_map.at(static_cast<ETownType>(town_iter->second->subID)).at(static_cast<int>(town_iter->second->town_type));
+		}
+	}
+
+	// generate player towns
+	for (size_t i = 0; i < map->players.size(); ++i)
+	{
+		bool randomize_faction = true;
+
+		if (map->players[i].isFactionActive && (!map->players[i].isFactionRandom) && map->players[i].hasMainTown)
+		{
+			auto town_iter = m_townByPos.find(map->players[i].posOfMainTown);
+			if (town_iter != m_townByPos.end())
+			{
+				if (town_iter->second->ID == Obj::TOWN)
+				{
+					map->players[i].playerFaction = static_cast<ETownType>(town_iter->second->subID);
+					randomize_faction = false;
+				}
+			}
+		}
+
+		if (randomize_faction)
+		{
+			if (map->players[i].allowedFactions.size() == 1)
+			{
+				map->players[i].playerFaction = map->players[i].allowedFactions[0];
+			}
+			else
+			{
+				map->players[i].playerFaction = map->players[i].allowedFactions[CRandomGenerator::instance().nextInt<size_t>(0, map->players[i].allowedFactions.size() - 1)];
+			}
+		}
+
+		if (!map->players[i].isFactionActive)
+		{
+			continue;
+		}
+
+		if (map->players[i].hasMainTown)
+		{
+			// pos of main town is usually pointed to town gate, not to origin
+			auto town_iter = m_townByPos.find(int3(map->players[i].posOfMainTown.x + 2, map->players[i].posOfMainTown.y, map->players[i].posOfMainTown.z));
+			if (town_iter != m_townByPos.end())
+			{
+				if (town_iter->second->ID == Obj::RANDOM_TOWN)
+				{
+					town_iter->second->ID = Obj::TOWN;
+					town_iter->second->subID = static_cast<int32_t>(map->players[i].playerFaction);
+					town_iter->second->appearance.animationFile = towns_map.at(map->players[i].playerFaction).at(static_cast<int>(town_iter->second->town_type));
+				}
+
+				if (map->players[i].generateHeroAtMainTown)
+				{
+					town_iter->second->hero_type = town_iter->second->subID * 2 + CRandomGenerator::instance().nextInt<uint8_t>(0, 1);
+				}
+			}
+		}
+	}
+
+	// generate remaining random towns
+	for (auto iter = m_randomTowns.begin(); iter != m_randomTowns.end(); ++iter)
+	{
+		if ((*iter)->ID == Obj::RANDOM_TOWN)
+		{
+			(*iter)->ID = Obj::TOWN;
+
+			if (((*iter)->alignment >= 0) && ((*iter)->alignment < static_cast<decltype((*iter)->alignment)>(PlayerColor::PLAYER_LIMIT_I)))
+			{
+				(*iter)->subID = static_cast<int32_t>(map->players[(*iter)->alignment].playerFaction);
+			}
+			else
+			{
+				(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7);
+			}
+
+			(*iter)->appearance.animationFile = towns_map.at(static_cast<ETownType>((*iter)->subID)).at(static_cast<int>((*iter)->town_type));
+		}
+	}
+
+	for (auto iter = m_randomDwellings.begin(); iter != m_randomDwellings.end(); ++iter)
+	{
+		// check allowed factions and levels, after that pick correct ones
+		ETownType selected_town;
+		int selected_level;
+
+		if (auto castleSpec = dynamic_cast<CCreGenAsCastleInfo *>((*iter)->info.get()))
+		{
+			if (!castleSpec->asCastle)
+			{
+				std::vector<ETownType> allowedFactions;
+
+				for (int i = 0; i < castleSpec->allowedFactions.size(); ++i)
+				{
+					if (castleSpec->allowedFactions[i])
+					{
+						allowedFactions.push_back(static_cast<ETownType>(i));
+					}
+				}
+
+				if (allowedFactions.empty())
+				{
+					for (int i = 0; i < GameConstants::F_NUMBER; ++i)
+					{
+						allowedFactions.push_back(static_cast<ETownType>(i));
+					}
+				}
+
+				if (allowedFactions.size() > 1)
+				{
+					selected_town = allowedFactions[CRandomGenerator::instance().nextInt<size_t>(0, allowedFactions.size() - 1)];
+				}
+				else
+				{
+					selected_town = allowedFactions[0];
+				}
+			}
+			else
+			{
+				auto castle_iter = m_townByIdentifier.find(castleSpec->identifier);
+				if (castle_iter != m_townByIdentifier.end())
+				{
+					selected_town = static_cast<ETownType>(castle_iter->second->subID);
+				}
+				else
+				{
+					selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
+				}
+			}
+		}
+		else
+		{
+			selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
+		}
+
+		if (auto lvlSpec = dynamic_cast<CCreGenLeveledInfo *>((*iter)->info.get()))
+		{
+			selected_level = CRandomGenerator::instance().nextInt<int>(lvlSpec->minLevel, lvlSpec->maxLevel) - 1;
+		}
+		else
+		{
+			selected_level = CRandomGenerator::instance().nextInt<int>(0, 6);
+		}
+
+		(*iter)->appearance.animationFile = dwellings_map.at(selected_town).at(selected_level);
+	}
+
+	std::vector<std::string> all_monsters_map;
+
+	{
+		size_t total_size = 0;
+
+		for (size_t i = 0; i < monsters_map.size(); ++i)
+		{
+			total_size += monsters_map[i].size();
+		}
+
+		all_monsters_map.reserve(total_size);
+
+		for (size_t i = 0; i < monsters_map.size(); ++i)
+		{
+			all_monsters_map.insert(all_monsters_map.end(), monsters_map[i].begin(), monsters_map[i].end());
+		}
+	}
+
+	std::vector<ArtifactID> all_artifacts_map, all_treasure_artifacts_map, all_minor_artifacts_map, all_major_artifacts_map, all_relic_artifacts_map;
+
+	{
+		all_artifacts_map.reserve(treasure_artifacts.size() + minor_artifacts.size() + major_artifacts.size() + relic_artifacts.size() + ((mapHeader->version != EMapFormat::ROE) ? combination_artifacts.size() : 0));
+		all_treasure_artifacts_map.reserve(treasure_artifacts.size());
+		all_minor_artifacts_map.reserve(minor_artifacts.size());
+		all_major_artifacts_map.reserve(major_artifacts.size());
+		all_relic_artifacts_map.reserve(relic_artifacts.size() + ((mapHeader->version != EMapFormat::ROE) ? combination_artifacts.size() : 0));
+
+		for (auto iter = treasure_artifacts.begin(); iter != treasure_artifacts.end(); ++iter)
+		{
+			if ((static_cast<size_t>(*iter) < map->allowedArtifact.size()) && map->allowedArtifact[static_cast<size_t>(*iter)])
+			{
+				all_treasure_artifacts_map.push_back(*iter);
+				all_artifacts_map.push_back(*iter);
+			}
+		}
+
+		for (auto iter = minor_artifacts.begin(); iter != minor_artifacts.end(); ++iter)
+		{
+			if ((static_cast<size_t>(*iter) < map->allowedArtifact.size()) && map->allowedArtifact[static_cast<size_t>(*iter)])
+			{
+				all_minor_artifacts_map.push_back(*iter);
+				all_artifacts_map.push_back(*iter);
+			}
+		}
+
+		for (auto iter = major_artifacts.begin(); iter != major_artifacts.end(); ++iter)
+		{
+			if ((static_cast<size_t>(*iter) < map->allowedArtifact.size()) && map->allowedArtifact[static_cast<size_t>(*iter)])
+			{
+				all_major_artifacts_map.push_back(*iter);
+				all_artifacts_map.push_back(*iter);
+			}
+		}
+
+		for (auto iter = relic_artifacts.begin(); iter != relic_artifacts.end(); ++iter)
+		{
+			if ((static_cast<size_t>(*iter) < map->allowedArtifact.size()) && map->allowedArtifact[static_cast<size_t>(*iter)])
+			{
+				all_relic_artifacts_map.push_back(*iter);
+				all_artifacts_map.push_back(*iter);
+			}
+		}
+
+		for (auto iter = combination_artifacts.begin(); iter != combination_artifacts.end(); ++iter)
+		{
+			if ((static_cast<size_t>(*iter) < map->allowedArtifact.size()) && map->allowedArtifact[static_cast<size_t>(*iter)])
+			{
+				all_relic_artifacts_map.push_back(*iter);
+				all_artifacts_map.push_back(*iter);
+			}
+		}
+
+		if (all_artifacts_map.empty())
+		{
+			all_artifacts_map.insert(all_artifacts_map.end(), treasure_artifacts.begin(), treasure_artifacts.end());
+			all_artifacts_map.insert(all_artifacts_map.end(), minor_artifacts.begin(), minor_artifacts.end());
+			all_artifacts_map.insert(all_artifacts_map.end(), major_artifacts.begin(), major_artifacts.end());
+			all_artifacts_map.insert(all_artifacts_map.end(), relic_artifacts.begin(), relic_artifacts.end());
+
+			if (mapHeader->version != EMapFormat::ROE)
+			{
+				all_artifacts_map.insert(all_artifacts_map.end(), combination_artifacts.begin(), combination_artifacts.end());
+			}
+			else
+			{
+				all_artifacts_map.erase(std::remove(all_artifacts_map.begin(), all_artifacts_map.end(), ArtifactID::ARMAGEDDONS_BLADE), all_artifacts_map.end());
+				all_artifacts_map.erase(std::remove(all_artifacts_map.begin(), all_artifacts_map.end(), ArtifactID::VIAL_OF_DRAGON_BLOOD), all_artifacts_map.end());
+			}
+		}
+
+		if (all_treasure_artifacts_map.empty())
+		{
+			all_treasure_artifacts_map.insert(all_treasure_artifacts_map.end(), treasure_artifacts.begin(), treasure_artifacts.end());
+		}
+
+		if (all_minor_artifacts_map.empty())
+		{
+			all_minor_artifacts_map.insert(all_minor_artifacts_map.end(), minor_artifacts.begin(), minor_artifacts.end());
+		}
+
+		if (all_major_artifacts_map.empty())
+		{
+			all_major_artifacts_map.insert(all_major_artifacts_map.end(), major_artifacts.begin(), major_artifacts.end());
+		}
+
+		if (all_relic_artifacts_map.empty())
+		{
+			all_relic_artifacts_map.insert(all_relic_artifacts_map.end(), relic_artifacts.begin(), relic_artifacts.end());
+
+			if (mapHeader->version == EMapFormat::SOD)
+			{
+				all_relic_artifacts_map.insert(all_relic_artifacts_map.end(), combination_artifacts.begin(), combination_artifacts.end());
+			}
+			else if (mapHeader->version == EMapFormat::ROE)
+			{
+				all_relic_artifacts_map.erase(std::remove(all_relic_artifacts_map.begin(), all_relic_artifacts_map.end(), ArtifactID::ARMAGEDDONS_BLADE), all_relic_artifacts_map.end());
+				all_relic_artifacts_map.erase(std::remove(all_relic_artifacts_map.begin(), all_relic_artifacts_map.end(), ArtifactID::VIAL_OF_DRAGON_BLOOD), all_relic_artifacts_map.end());
+			}
+		}
+	}
+
+	for (auto iter = m_randomObjects.begin(); iter != m_randomObjects.end(); ++iter)
+	{
+		switch ((*iter)->ID)
+		{
+		case Obj::RANDOM_HERO:
+		case Obj::HERO_PLACEHOLDER:
+			{
+				if (((*iter)->ID == Obj::HERO_PLACEHOLDER) && ((*iter)->subID >= 0) && ((*iter)->subID < hero_subtype_appearance_map.size()))
+				{
+					(*iter)->appearance.animationFile = hero_subtype_appearance_map[(*iter)->subID];
+				}
+				else
+				{
+					(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, (mapHeader->version != EMapFormat::ROE ? 9 : 8) * 2 - 1);
+
+					std::stringstream ss;
+					ss << "ah" << std::setfill('0') << std::setw(2) << (*iter)->subID << "_e.def";
+					(*iter)->appearance.animationFile = ss.str();
+				}
+			}
+			break;
+
+		case Obj::RANDOM_MONSTER:
+			(*iter)->appearance.animationFile = all_monsters_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_monsters_map.size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L1:
+			(*iter)->appearance.animationFile = monsters_map[0][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[0].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L2:
+			(*iter)->appearance.animationFile = monsters_map[1][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[1].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L3:
+			(*iter)->appearance.animationFile = monsters_map[2][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[2].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L4:
+			(*iter)->appearance.animationFile = monsters_map[3][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[3].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L5:
+			(*iter)->appearance.animationFile = monsters_map[4][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[4].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L6:
+			(*iter)->appearance.animationFile = monsters_map[5][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[5].size() - 1)];
+			break;
+
+		case Obj::RANDOM_MONSTER_L7:
+			(*iter)->appearance.animationFile = monsters_map[6][CRandomGenerator::instance().nextInt<int32_t>(0, monsters_map[6].size() - 1)];
+			break;
+
+		case Obj::RANDOM_ART:
+			{
+				auto artifact_id = all_artifacts_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_artifacts_map.size() - 1)];
+
+				std::stringstream ss;
+				ss << "ava" << std::setfill('0') << std::setw(4) << static_cast<size_t>(artifact_id) << ".def";
+				(*iter)->appearance.animationFile = ss.str();
+			}
+			break;
+
+		case Obj::RANDOM_TREASURE_ART:
+			{
+				auto artifact_id = all_treasure_artifacts_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_treasure_artifacts_map.size() - 1)];
+
+				std::stringstream ss;
+				ss << "ava" << std::setfill('0') << std::setw(4) << static_cast<size_t>(artifact_id) << ".def";
+				(*iter)->appearance.animationFile = ss.str();
+			}
+			break;
+
+		case Obj::RANDOM_MINOR_ART:
+			{
+				auto artifact_id = all_minor_artifacts_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_minor_artifacts_map.size() - 1)];
+
+				std::stringstream ss;
+				ss << "ava" << std::setfill('0') << std::setw(4) << static_cast<size_t>(artifact_id) << ".def";
+				(*iter)->appearance.animationFile = ss.str();
+			}
+			break;
+
+		case Obj::RANDOM_MAJOR_ART:
+			{
+				auto artifact_id = all_major_artifacts_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_major_artifacts_map.size() - 1)];
+
+				std::stringstream ss;
+				ss << "ava" << std::setfill('0') << std::setw(4) << static_cast<size_t>(artifact_id) << ".def";
+				(*iter)->appearance.animationFile = ss.str();
+			}
+			break;
+
+		case Obj::RANDOM_RELIC_ART:
+			{
+				auto artifact_id = all_relic_artifacts_map[CRandomGenerator::instance().nextInt<int32_t>(0, all_relic_artifacts_map.size() - 1)];
+
+				std::stringstream ss;
+				ss << "ava" << std::setfill('0') << std::setw(4) << static_cast<size_t>(artifact_id) << ".def";
+				(*iter)->appearance.animationFile = ss.str();
+			}
+			break;
+
+		case Obj::RANDOM_RESOURCE:
+			(*iter)->appearance.animationFile = resources_map[CRandomGenerator::instance().nextInt<int32_t>(0, resources_map.size() - 1)];
+			break;
+		}
+	}
+
+	// fix town guest heroes locations
+	for (auto hero_iter = m_heroesList.begin(); hero_iter != m_heroesList.end(); ++hero_iter)
+	{
+		auto town_iter = m_townByPos.find((*hero_iter)->pos);
+		if (town_iter != m_townByPos.end())
+		{
+			(*hero_iter)->pos.x -= 1;
+		}
+	}
+
+	m_randomTowns.clear();
+	m_randomDwellings.clear();
+	m_randomObjects.clear();
+	m_heroesList.clear();
+	m_townByPos.clear();
+	m_townByIdentifier.clear();
 }
 
 void CMapLoaderH3M::readHeader()
@@ -647,6 +1047,15 @@ void CMapLoaderH3M::readObjects()
 		case Obj::PRISON:
 			{
 				nobj = readHero();
+				if (objTempl.id == Obj::RANDOM_HERO)
+				{
+					m_randomObjects.push_back(nobj);
+					m_heroesList.push_back(nobj);
+				}
+				if (objTempl.id == Obj::HERO)
+				{
+					m_heroesList.push_back(nobj);
+				}
 				break;
 			}
 
@@ -689,6 +1098,23 @@ void CMapLoaderH3M::readObjects()
 				reader.skip(1); // monster never flees
 				reader.skip(1); // monster not growing
 				reader.skip(2);
+
+				switch (objTempl.id)
+				{
+				case Obj::RANDOM_MONSTER:
+				case Obj::RANDOM_MONSTER_L1:
+				case Obj::RANDOM_MONSTER_L2:
+				case Obj::RANDOM_MONSTER_L3:
+				case Obj::RANDOM_MONSTER_L4:
+				case Obj::RANDOM_MONSTER_L5:
+				case Obj::RANDOM_MONSTER_L6:
+				case Obj::RANDOM_MONSTER_L7:
+					{
+						m_randomObjects.push_back(nobj);
+						break;
+					}
+				}
+
 				break;
 			}
 
@@ -752,6 +1178,19 @@ void CMapLoaderH3M::readObjects()
 			{
 				nobj = new CGObjectInstance();
 				skipMessageAndGuards();
+
+				switch (objTempl.id)
+				{
+				case Obj::RANDOM_ART:
+				case Obj::RANDOM_TREASURE_ART:
+				case Obj::RANDOM_MINOR_ART:
+				case Obj::RANDOM_MAJOR_ART:
+				case Obj::RANDOM_RELIC_ART:
+					{
+						m_randomObjects.push_back(nobj);
+						break;
+					}
+				}
 				break;
 			}
 
@@ -770,6 +1209,11 @@ void CMapLoaderH3M::readObjects()
 				skipMessageAndGuards();;
 				reader.skip(4); // amount
 				reader.skip(4);
+
+				if (objTempl.id == Obj::RANDOM_RESOURCE)
+				{
+					m_randomObjects.push_back(nobj);
+				}
 				break;
 			}
 
@@ -778,6 +1222,14 @@ void CMapLoaderH3M::readObjects()
 			{
 				auto tobj  = readTown();
 				nobj = tobj;
+
+				if (objTempl.id == Obj::RANDOM_TOWN)
+				{
+					m_randomTowns.push_back(tobj);
+				}
+
+				m_townByPos[objPos] = tobj;
+				m_townByIdentifier[tobj->identifier] = tobj;
 				break;
 			}
 
@@ -935,6 +1387,8 @@ void CMapLoaderH3M::readObjects()
 				}
 
 				dwelling->info.reset(spec);
+
+				m_randomDwellings.push_back(dwelling);
 				break;
 			}
 
@@ -958,6 +1412,9 @@ void CMapLoaderH3M::readObjects()
 				{
 					reader.skip(1); // hero power
 				}
+
+				m_randomObjects.push_back(nobj);
+				m_heroesList.push_back(nobj);
 				break;
 			}
 

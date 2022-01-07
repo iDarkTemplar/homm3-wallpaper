@@ -224,4 +224,12 @@ private:
 
 	CBinaryReader reader;
 	CInputStream *inputStream;
+
+	std::list<CGTownInstance*> m_randomTowns;
+	std::list<CGDwelling*> m_randomDwellings;
+	std::list<CGObjectInstance*> m_randomObjects;
+
+	std::list<CGObjectInstance*> m_heroesList;
+	std::map<int3, CGTownInstance*> m_townByPos;
+	std::map<uint32_t, CGTownInstance*> m_townByIdentifier;
 };
