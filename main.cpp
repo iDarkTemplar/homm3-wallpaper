@@ -23,8 +23,8 @@
 #include "def_file.h"
 #include "homm3_image_provider.h"
 #include "homm3map.h"
+#include "homm3singleton.h"
 #include "lod_archive.h"
-#include "map_object.h"
 
 #include "vcmi/CBinaryReader.h"
 #include "vcmi/CFileInputStream.h"
@@ -45,25 +45,27 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > lod_entries = std::make_shared<std::map<std::string, std::tuple<std::string, LodEntry> > >();
-
-		for (int i = 2; i < argc; ++i)
 		{
-			CFileInputStream file_stream(std::filesystem::path(argv[i]));
-			CBinaryReader reader(&file_stream);
-			std::vector<LodEntry> files = read_lod_archive_header(reader);
+			std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
 
-			for (auto iter = files.begin(); iter != files.end(); ++iter)
+			for (int i = 2; i < argc; ++i)
 			{
-				(*lod_entries)[iter->name] = std::tie(argv[i], *iter);
+				CFileInputStream file_stream(std::filesystem::path(argv[i]));
+				CBinaryReader reader(&file_stream);
+				std::vector<LodEntry> files = read_lod_archive_header(reader);
+
+				for (auto iter = files.begin(); iter != files.end(); ++iter)
+				{
+					lod_entries[iter->name] = std::tie(argv[i], *iter);
+				}
 			}
+
+			Homm3MapSingleton::getInstance()->lod_entries = std::move(lod_entries);
 		}
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
-
-		Homm3MapSingleton::getInstance()->lod_entries = lod_entries;
 
 		QGuiApplication app(argc, argv);
 
@@ -71,7 +73,7 @@ int main(int argc, char **argv)
 
 		QQmlApplicationEngine engine;
 
-		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider(lod_entries));
+		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider);
 
 		engine.rootContext()->setContextProperty(QStringLiteral("map_name"), QString::fromLocal8Bit(argv[1]));
 

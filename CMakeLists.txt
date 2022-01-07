@@ -16,9 +16,9 @@ set (SOURCES
 	def_file.cpp
 	homm3_image_provider.cpp
 	homm3map.cpp
+	homm3singleton.cpp
 	lod_archive.cpp
 	main.cpp
-	map_object.cpp
 	random.cpp
 	texture_atlas.cpp
 	vcmi/CBinaryReader.cpp
@@ -35,8 +35,8 @@ set(HEADERS
 	globals.h
 	homm3_image_provider.h
 	homm3map.h
+	homm3singleton.h
 	lod_archive.h
-	map_object.h
 	random.h
 	texture_atlas.h
 	vcmi/CBinaryReader.h

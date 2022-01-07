@@ -6,7 +6,7 @@
  *
  */
 
-#include "map_object.h"
+#include "homm3singleton.h"
 
 #include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"

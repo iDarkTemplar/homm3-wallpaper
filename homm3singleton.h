@@ -22,7 +22,7 @@ class Homm3MapSingleton
 public:
 	static std::shared_ptr<Homm3MapSingleton> getInstance();
 
-	std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > lod_entries;
+	std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
 
 private:
 	Homm3MapSingleton() = default;

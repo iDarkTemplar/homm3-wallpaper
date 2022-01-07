@@ -30,7 +30,7 @@
 
 #include "data_maps.h"
 #include "def_file.h"
-#include "map_object.h"
+#include "homm3singleton.h"
 #include "random.h"
 
 enum class SpecialTile
@@ -196,8 +196,8 @@ Def loadDefFile(const std::string &name, int special)
 {
 	const auto &lod_entries = Homm3MapSingleton::getInstance()->lod_entries;
 
-	auto lod_entries_iter = lod_entries->find(name);
-	if (lod_entries_iter == lod_entries->end())
+	auto lod_entries_iter = lod_entries.find(name);
+	if (lod_entries_iter == lod_entries.end())
 	{
 		return Def();
 	}

@@ -11,6 +11,7 @@
 #include <set>
 
 #include "def_file.h"
+#include "homm3singleton.h"
 #include "random.h"
 
 namespace {
@@ -20,9 +21,8 @@ const size_t edge_used_tile_in_row = 4;
 
 } // unnamed namespace
 
-Homm3ImageProvider::Homm3ImageProvider(const std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > &lod_entries)
+Homm3ImageProvider::Homm3ImageProvider()
 	: QQuickImageProvider(QQmlImageProviderBase::Image)
-	, m_lod_entries(lod_entries)
 {
 }
 
@@ -38,9 +38,10 @@ QImage Homm3ImageProvider::requestImage(const QString &id, QSize *size, const QS
 		return QImage();
 	}
 
-	// cache is empty, read image
-	auto lod_entries_iter = m_lod_entries->find(id.toLocal8Bit().data());
-	if (lod_entries_iter == m_lod_entries->end())
+	const auto &lod_entries = Homm3MapSingleton::getInstance()->lod_entries;
+
+	auto lod_entries_iter = lod_entries.find(id.toLocal8Bit().data());
+	if (lod_entries_iter == lod_entries.end())
 	{
 		if (size != nullptr)
 		{
