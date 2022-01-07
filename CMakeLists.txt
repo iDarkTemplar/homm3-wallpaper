@@ -12,6 +12,7 @@ find_package(ZLIB REQUIRED)
 find_package(Qt5 COMPONENTS Core Quick REQUIRED)
 
 set (SOURCES
+	data_maps.cpp
 	def_file.cpp
 	homm3_image_provider.cpp
 	main.cpp
@@ -23,6 +24,7 @@ set (SOURCES
 	)
 
 set(HEADERS
+	data_maps.h
 	def_file.h
 	globals.h
 	homm3_image_provider.h
@@ -33,6 +35,7 @@ set(HEADERS
 	vcmi/CFileInputStream.h
 	vcmi/CInputStream.h
 	vcmi/CStream.h
+	vcmi/GameConstants.h
 	)
 
 set(RESOURCES
