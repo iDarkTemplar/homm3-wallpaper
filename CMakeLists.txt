@@ -9,7 +9,7 @@ set (CMAKE_CXX_STANDARD 17)
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
-find_package(Qt5 COMPONENTS Core Quick REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Concurrent Quick REQUIRED)
 
 set (SOURCES
 	data_maps.cpp
@@ -65,7 +65,7 @@ qt_wrap_cpp(MOC_HEADERS ${HEADERS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
 add_executable(homm3-wallpaper ${SOURCES} ${HEADERS} ${MOC_HEADERS} ${COMPILED_RESOURCES})
-target_link_libraries(homm3-wallpaper ZLIB::ZLIB Qt5::Core Qt5::Quick)
+target_link_libraries(homm3-wallpaper ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Concurrent Qt5::Quick)
 
 include(GNUInstallDirs)
 

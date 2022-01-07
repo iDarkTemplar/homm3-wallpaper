@@ -17,6 +17,8 @@
 #include <tuple>
 #include <utility>
 
+#include <QtCore/QMutexLocker>
+#include <QtConcurrent/QtConcurrent>
 #include <QtGui/QOpenGLFramebufferObjectFormat>
 #include <QtGui/QVector2D>
 #include <QtGui/QVector3D>
@@ -618,7 +620,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 					{
 						special_terrain_index = result.m_current_frames[std::get<1>(special_terrain_iter->second)];
 
-						Homm3MapRenderer::AnimatedItem item;
+						AnimatedItem item;
 
 						item.name = std::get<0>(tile_info);
 						item.group = std::get<1>(tile_info);
@@ -655,7 +657,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 						{
 							special_river_index = result.m_current_frames[std::get<1>(special_river_iter->second)];
 
-							Homm3MapRenderer::AnimatedItem item;
+							AnimatedItem item;
 
 							item.name = std::get<0>(river_info);
 							item.group = std::get<1>(river_info);
@@ -721,7 +723,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				{
 					frame = result.m_current_frames[object_iter->total_frames];
 
-					Homm3MapRenderer::AnimatedItem item;
+					AnimatedItem item;
 
 					item.name = object_iter->name;
 					item.group = object_iter->group;
@@ -924,12 +926,16 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 
 #define frame_duration 180
 
+bool AnimatedItem::operator<(const AnimatedItem &other) const
+{
+	return std::tie(this->name, this->group, this->special, this->total_frames, this->is_terrain) < std::tie(other.name, other.group, other.special, other.total_frames, other.is_terrain);
+}
+
 Homm3MapRenderer::Homm3MapRenderer()
 	: QQuickFramebufferObject::Renderer()
 	, m_texture_id(0)
 	, m_need_update_animation(false)
-	, m_level(0)
-	, m_need_update_map(true)
+	, m_need_update_map(false)
 {
 	QObject::connect(&m_frame_timer, &QTimer::timeout, this, &Homm3MapRenderer::updateFrames, Qt::QueuedConnection);
 
@@ -1042,31 +1048,19 @@ void Homm3MapRenderer::render()
 
 void Homm3MapRenderer::prepareRenderData()
 {
-	if (m_need_update_map)
+	if (m_need_update_map && !m_texture_data.empty())
 	{
-		auto data = loadMapData(QString(), m_map, m_level);
-
-		m_map = std::move(data.m_map);
-		m_level = std::move(data.m_level);
-
-		m_vertices = std::move(data.m_vertices);
-		m_texcoords = std::move(data.m_texcoords);
-
-		m_texture_atlas = std::move(data.m_texture_atlas);
-
-		m_current_frames = std::move(data.m_current_frames);
-
-		m_animated_items = std::move(data.m_animated_items);
-
 		glBindTexture(GL_TEXTURE_2D, m_texture_id);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texture_atlas.getSize(), m_texture_atlas.getSize(), 0,  GL_RGBA, GL_UNSIGNED_BYTE, data.m_texture_data.constData());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texture_atlas.getSize(), m_texture_atlas.getSize(), 0,  GL_RGBA, GL_UNSIGNED_BYTE, m_texture_data.constData());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glFinish();
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		m_need_update_map = false;
+		m_texture_data.clear();
 	}
+
+	m_need_update_map = false;
 }
 
 void Homm3MapRenderer::updateFrames()
@@ -1083,20 +1077,29 @@ void Homm3MapRenderer::synchronize(QQuickFramebufferObject *item)
 {
 	auto map_item = static_cast<Homm3Map*>(item);
 
-	m_need_update_map = map_item->m_map_updated;
-	map_item->m_map_updated = false;
+	m_need_update_map = true;
 
-	if (m_level != map_item->m_map_level)
-	{
-		m_need_update_map = true;
-		m_level = map_item->m_map_level;
-	}
+	QMutexLocker guard(&(map_item->m_data_mutex));
 
-	if (m_map != map_item->m_map)
-	{
-		m_need_update_map = true;
-		m_map = map_item->m_map;
-	}
+	m_map = map_item->m_map;
+
+	m_vertices = std::move(map_item->m_vertices);
+	m_texcoords = std::move(map_item->m_texcoords);
+
+	m_texture_atlas = std::move(map_item->m_texture_atlas);
+
+	m_current_frames = std::move(map_item->m_current_frames);
+
+	m_animated_items = std::move(map_item->m_animated_items);
+
+	m_texture_data = std::move(map_item->m_texture_data);
+
+	map_item->m_vertices.clear();
+	map_item->m_texcoords.clear();
+	map_item->m_texture_atlas.clear();
+	map_item->m_current_frames.clear();
+	map_item->m_animated_items.clear();
+	map_item->m_texture_data.clear();
 }
 
 void Homm3MapRenderer::updateAnimatedItems()
@@ -1142,53 +1145,78 @@ void Homm3MapRenderer::updateAnimatedItems()
 Homm3Map::Homm3Map(QQuickItem *parent)
 	: QQuickFramebufferObject(parent)
 	, m_map_level(0)
-	, m_map_updated(true)
 {
+	QObject::connect(&m_future_watcher, &QFutureWatcher<MapData>::finished, this, &Homm3Map::mapLoaded);
+}
+
+Homm3Map::~Homm3Map()
+{
+	m_future.waitForFinished();
 }
 
 QQuickFramebufferObject::Renderer* Homm3Map::createRenderer() const
 {
-	return new Homm3MapRenderer;
+	return new Homm3MapRenderer();
 }
 
 void Homm3Map::loadMap(const QString &filename)
 {
-	std::unique_ptr<CInputStream> data_stream(new CCompressedStream(std::unique_ptr<CFileInputStream>(new CFileInputStream(filename.toLocal8Bit().data())), true));
+	if (m_future.isRunning())
+	{
+		return;
+	}
 
-	CMapLoaderH3M map_loader(data_stream.get());
-
-	m_map = map_loader.loadMap();
-
-	m_map_level = 0;
-	m_map_updated = true;
-
-	updateWidth();
-	updateHeight();
-	update();
+	m_future = QtConcurrent::run(&loadMapData, filename, std::shared_ptr<CMap>(), 0);
+	m_future_watcher.setFuture(m_future);
 }
 
 void Homm3Map::toggleLevel()
 {
+	if (m_future.isRunning())
+	{
+		return;
+	}
+
+	QMutexLocker guard(&m_data_mutex);
+
 	if ((!m_map) || (!m_map->twoLevel))
 	{
 		return;
 	}
 
-	m_map_level = 1 - m_map_level;
+	m_future = QtConcurrent::run(&loadMapData, QString(), m_map, 1 - m_map_level);
+	m_future_watcher.setFuture(m_future);
+}
+
+void Homm3Map::mapLoaded()
+{
+	{
+		QMutexLocker guard(&m_data_mutex);
+
+		auto result = m_future.result();
+
+		if (result.m_vertices.isEmpty() || result.m_texcoords.isEmpty() || result.m_texture_data.isEmpty())
+		{
+			return;
+		}
+
+		m_map = std::move(result.m_map);
+		m_map_level = std::move(result.m_level);
+
+		m_vertices = std::move(result.m_vertices);
+		m_texcoords = std::move(result.m_texcoords);
+
+		m_texture_atlas = std::move(result.m_texture_atlas);
+
+		m_current_frames = std::move(result.m_current_frames);
+
+		m_animated_items = std::move(result.m_animated_items);
+
+		m_texture_data = std::move(result.m_texture_data);
+
+		setWidth((getMapWidth(m_map) + 2) * tile_size);
+		setHeight((getMapHeight(m_map) + 2) * tile_size);
+	}
+
 	update();
-}
-
-void Homm3Map::updateWidth()
-{
-	setWidth((getMapWidth(m_map) + 2) * tile_size);
-}
-
-void Homm3Map::updateHeight()
-{
-	setHeight((getMapHeight(m_map) + 2) * tile_size);
-}
-
-bool Homm3MapRenderer::AnimatedItem::operator<(const AnimatedItem &other) const
-{
-	return std::tie(this->name, this->group, this->special, this->total_frames, this->is_terrain) < std::tie(other.name, other.group, other.special, other.total_frames, other.is_terrain);
 }
