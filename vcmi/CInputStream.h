@@ -11,16 +11,18 @@
 
 #include "CStream.h"
 
+#include <memory>
+
 /**
  * Abstract class which provides method definitions for reading from a stream.
  */
-class DLL_LINKAGE CInputStream : public virtual CStream
+class CInputStream: public virtual CStream
 {
 public:
 	/**
 	 * D-tor.
 	 */
-	virtual ~CInputStream() {}
+	virtual ~CInputStream() = default;
 
 	/**
 	 * Reads n bytes from the stream into the data buffer.
@@ -29,39 +31,20 @@ public:
 	 * @param size The number of bytes to read.
 	 * @return the number of bytes read actually.
 	 */
-	virtual si64 read(ui8 * data, si64 size) = 0;
+	virtual int64_t read(uint8_t *data, int64_t size) = 0;
 
 	/**
 	 * @brief for convenience, reads whole stream at once
 	 *
 	 * @return pair, first = raw data, second = size of data
 	 */
-	std::pair<std::unique_ptr<ui8[]>, si64> readAll()
+	std::pair<std::unique_ptr<uint8_t[]>, int64_t> readAll()
 	{
-		std::unique_ptr<ui8[]> data(new ui8[getSize()]);
+		std::unique_ptr<uint8_t[]> data(new uint8_t[getSize()]);
 
 		seek(0);
 		auto readSize = read(data.get(), getSize());
-		assert(readSize == getSize());
-		UNUSED(readSize);
 
-		return std::make_pair(std::move(data), getSize());
-	}
-
-	/**
-	 * @brief calculateCRC32 calculates CRC32 checksum for the whole file
-	 * @return calculated checksum
-	 */
-	virtual ui32 calculateCRC32()
-	{
-		si64 originalPos = tell();
-
-		boost::crc_32_type checksum;
-		auto data = readAll();
-		checksum.process_bytes(reinterpret_cast<const void *>(data.first.get()), data.second);
-
-		seek(originalPos);
-
-		return checksum.checksum();
+		return std::make_pair(std::move(data), readSize);
 	}
 };

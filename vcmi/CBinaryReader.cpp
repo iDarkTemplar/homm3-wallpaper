@@ -7,18 +7,21 @@
  * Full text of license available in license.txt file, in main folder
  *
  */
-#include "StdInc.h"
 #include "CBinaryReader.h"
 
-#include <SDL_endian.h>
-#include "CInputStream.h"
-#include "../CGeneralTextHandler.h"
+#include <endian.h>
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+
+#include "CInputStream.h"
+
+#if __BYTE_ORDER == __BIG_ENDIAN
 template <typename CData>
 CData readLE(CData data)
 {
-	auto dataPtr = (char*)&data;
+	auto dataPtr = (char*) &data;
 	std::reverse(dataPtr, dataPtr + sizeof(data));
 	return data;
 }
@@ -30,31 +33,29 @@ CData readLE(CData data)
 }
 #endif
 
-CBinaryReader::CBinaryReader() : stream(nullptr)
+CBinaryReader::CBinaryReader(CInputStream *stream)
+	: stream(stream)
 {
 }
 
-CBinaryReader::CBinaryReader(CInputStream * stream) : stream(stream)
-{
-}
-
-CInputStream * CBinaryReader::getStream()
+CInputStream* CBinaryReader::getStream()
 {
 	return stream;
 }
 
-void CBinaryReader::setStream(CInputStream * stream)
+void CBinaryReader::setStream(CInputStream *stream)
 {
 	this->stream = stream;
 }
 
-si64 CBinaryReader::read(ui8 * data, si64 size)
+int64_t CBinaryReader::read(uint8_t *data, int64_t size)
 {
-	si64 bytesRead = stream->read(data, size);
-	if(bytesRead != size)
+	int64_t bytesRead = stream->read(data, size);
+	if (bytesRead != size)
 	{
 		throw std::runtime_error(getEndOfStreamExceptionMsg((long)size));
 	}
+
 	return bytesRead;
 }
 
@@ -62,7 +63,7 @@ template <typename CData>
 CData CBinaryReader::readInteger()
 {
 	CData val;
-	stream->read(reinterpret_cast<unsigned char *>(&val), sizeof(val));
+	stream->read(reinterpret_cast<unsigned char*>(&val), sizeof(val));
 	return readLE(val);
 }
 
@@ -74,32 +75,30 @@ datatype CBinaryReader::methodname() \
 // While it is certanly possible to leave only template method
 // but typing template parameter every time can be annoying
 // and templates parameters can't be resolved by return type
-INSTANTIATE(ui8, readUInt8)
-INSTANTIATE(si8, readInt8)
-INSTANTIATE(ui16, readUInt16)
-INSTANTIATE(si16, readInt16)
-INSTANTIATE(ui32, readUInt32)
-INSTANTIATE(si32, readInt32)
-INSTANTIATE(ui64, readUInt64)
-INSTANTIATE(si64, readInt64)
+INSTANTIATE(uint8_t, readUInt8)
+INSTANTIATE(int8_t, readInt8)
+INSTANTIATE(uint16_t, readUInt16)
+INSTANTIATE(int16_t, readInt16)
+INSTANTIATE(uint32_t, readUInt32)
+INSTANTIATE(int32_t, readInt32)
+INSTANTIATE(uint64_t, readUInt64)
+INSTANTIATE(int64_t, readInt64)
 
 #undef INSTANTIATE
 
 std::string CBinaryReader::readString()
 {
-	unsigned int len = readUInt32();
-	assert(len <= 500000); //not too long
+	uint32_t len = readUInt32();
+
 	if (len > 0)
 	{
 		std::string ret;
 		ret.resize(len);
-		read(reinterpret_cast<ui8*>(&ret[0]), len);
-		//FIXME: any need to move this into separate "read localized string" method?
-		if (Unicode::isValidASCII(ret))
-			return ret;
-		return Unicode::toUnicode(ret);
+		read(reinterpret_cast<uint8_t*>(&ret[0]), len);
+		return ret;
 	}
-	return "";
+
+	return std::string();
 
 }
 

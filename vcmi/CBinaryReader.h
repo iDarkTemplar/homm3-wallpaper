@@ -9,6 +9,10 @@
  */
 #pragma once
 
+#include <stdint.h>
+#include <string>
+#include <boost/noncopyable.hpp>
+
 class CInputStream;
 
 /**
@@ -17,34 +21,34 @@ class CInputStream;
  * The integers which are read are supposed to be little-endian values permanently. They will be
  * converted to big-endian values on big-endian machines.
  */
-class DLL_LINKAGE CBinaryReader : public boost::noncopyable
+class CBinaryReader: public boost::noncopyable
 {
 public:
 	/**
 	 * Default c-tor.
 	 */
-	CBinaryReader();
+	CBinaryReader() = default;
 
 	/**
 	 * C-tor.
 	 *
 	 * @param stream The base stream object which serves as the reading input.
 	 */
-    CBinaryReader(CInputStream * stream);
+	CBinaryReader(CInputStream *stream);
 
 	/**
 	 * Gets the underlying stream.
 	 *
 	 * @return the base stream.
 	 */
-	CInputStream * getStream();
+	CInputStream* getStream();
 
 	/**
 	 * Sets the underlying stream.
 	 *
 	 * @param stream The base stream to set
 	 */
-    void setStream(CInputStream * stream);
+	void setStream(CInputStream *stream);
 
 	/**
 	 * Reads n bytes from the stream into the data buffer.
@@ -53,7 +57,7 @@ public:
 	 * @param size The number of bytes to read.
 	 * @return the number of bytes read actually.
 	 */
-	si64 read(ui8 * data, si64 size);
+	int64_t read(uint8_t *data, int64_t size);
 
 	/**
 	 * Reads integer of various size. Advances the read pointer.
@@ -62,14 +66,14 @@ public:
 	 *
 	 * @throws std::runtime_error if the end of the stream was reached unexpectedly
 	 */
-	ui8 readUInt8();
-	si8 readInt8();
-	ui16 readUInt16();
-	si16 readInt16();
-	ui32 readUInt32();
-	si32 readInt32();
-	ui64 readUInt64();
-	si64 readInt64();
+	uint8_t readUInt8();
+	int8_t readInt8();
+	uint16_t readUInt16();
+	int16_t readInt16();
+	uint32_t readUInt32();
+	int32_t readInt32();
+	uint64_t readUInt64();
+	int64_t readInt64();
 
 	std::string readString();
 
@@ -79,16 +83,17 @@ public:
 	}
 
 	void skip(int count);
+
 private:
-    /**
-     * Reads any integer. Advances the read pointer by its size.
-     *
-     * @return read integer.
-     *
-     * @throws std::runtime_error if the end of the stream was reached unexpectedly
-     */
-    template <typename CData>
-    CData readInteger();
+	/**
+	 * Reads any integer. Advances the read pointer by its size.
+	 *
+	 * @return read integer.
+	 *
+	 * @throws std::runtime_error if the end of the stream was reached unexpectedly
+	 */
+	template <typename CData>
+	CData readInteger();
 
 	/**
 	 * Gets a end of stream exception message.
@@ -99,5 +104,5 @@ private:
 	std::string getEndOfStreamExceptionMsg(long bytesToRead) const;
 
 	/** The underlying base stream */
-	CInputStream * stream;
+	CInputStream *stream = nullptr;
 };
