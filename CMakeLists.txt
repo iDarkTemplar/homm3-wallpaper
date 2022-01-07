@@ -7,17 +7,20 @@ project(homm3-wallpaper
 set (CMAKE_CXX_STANDARD 17)
 
 find_package(Boost REQUIRED)
+find_package(ZLIB REQUIRED)
 
 set (SOURCES
 	main.cpp
 	lod_archive.cpp
 	vcmi/CBinaryReader.cpp
+	vcmi/CCompressedStream.cpp
 	vcmi/CFileInputStream.cpp
 	)
 
 set(HEADERS
 	lod_archive.h
 	vcmi/CBinaryReader.h
+	vcmi/CCompressedStream.h
 	vcmi/CFileInputStream.h
 	vcmi/CInputStream.h
 	vcmi/CStream.h
@@ -26,7 +29,7 @@ set(HEADERS
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
 add_executable(homm3-wallpaper ${SOURCES} ${HEADERS})
-target_link_libraries(homm3-wallpaper)
+target_link_libraries(homm3-wallpaper ZLIB::ZLIB)
 
 include(GNUInstallDirs)
 
