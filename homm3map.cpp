@@ -578,7 +578,7 @@ void Homm3MapRenderer::prepareRenderData()
 		{
 			int level = 0;
 
-			// draw terrain, rivers and roads
+			// draw terrain, rivers
 			for (int tile_y = 0; tile_y < m_item->getMapHeight(); ++tile_y)
 			{
 				for (int tile_x = 0; tile_x < m_item->getMapWidth(); ++tile_x)
@@ -656,16 +656,23 @@ void Homm3MapRenderer::prepareRenderData()
 						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
 						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
 					}
+				}
+			}
 
+			// draw roads
+			for (int tile_y = 0; tile_y < m_item->getMapHeight(); ++tile_y)
+			{
+				for (int tile_x = 0; tile_x < m_item->getMapWidth(); ++tile_x)
+				{
 					auto road_info = m_item->getRoadTile(tile_x, tile_y, level);
 					if (!std::get<0>(road_info).empty())
 					{
-						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
-						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
 
 						tex_rect = m_texture_atlas.findItem(TextureItem(std::get<0>(road_info), 0, std::get<1>(road_info), -1));
 						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
