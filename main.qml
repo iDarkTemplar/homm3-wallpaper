@@ -8,6 +8,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import homm3map 1.0
 
 ApplicationWindow {
 	id: window
@@ -20,5 +21,21 @@ ApplicationWindow {
 	background: Image {
 		source: "image://homm3/edg.def"
 		fillMode: Image.Tile
+	}
+
+	Flickable {
+		id: root
+
+		anchors.fill: parent
+		leftMargin: contentWidth >= width ? 0 : (width - contentWidth) / 2
+		topMargin: contentHeight >= height ? 0 : (height - contentHeight) / 2
+		contentItem.clip: true
+
+		contentWidth: map.width
+		contentHeight: map.height
+
+		Homm3Map {
+			id: map
+		}
 	}
 }

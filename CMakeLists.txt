@@ -15,9 +15,12 @@ set (SOURCES
 	data_maps.cpp
 	def_file.cpp
 	homm3_image_provider.cpp
-	main.cpp
+	homm3map.cpp
 	lod_archive.cpp
+	main.cpp
+	map_object.cpp
 	random.cpp
+	texture_atlas.cpp
 	vcmi/CBinaryReader.cpp
 	vcmi/CCompressedStream.cpp
 	vcmi/CFileInputStream.cpp
@@ -31,8 +34,11 @@ set(HEADERS
 	def_file.h
 	globals.h
 	homm3_image_provider.h
+	homm3map.h
 	lod_archive.h
+	map_object.h
 	random.h
+	texture_atlas.h
 	vcmi/CBinaryReader.h
 	vcmi/CCompressedStream.h
 	vcmi/CFileInputStream.h
@@ -54,10 +60,11 @@ set(RESOURCES
 )
 
 qt_add_resources(COMPILED_RESOURCES ${RESOURCES})
+qt_wrap_cpp(MOC_HEADERS ${HEADERS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
-add_executable(homm3-wallpaper ${SOURCES} ${HEADERS} ${COMPILED_RESOURCES})
+add_executable(homm3-wallpaper ${SOURCES} ${HEADERS} ${MOC_HEADERS} ${COMPILED_RESOURCES})
 target_link_libraries(homm3-wallpaper ZLIB::ZLIB Qt5::Core Qt5::Quick)
 
 include(GNUInstallDirs)

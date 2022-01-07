@@ -16,10 +16,10 @@
 class Homm3ImageProvider: public QQuickImageProvider
 {
 public:
-	explicit Homm3ImageProvider(const std::map<std::string, std::tuple<std::string, LodEntry> > &lod_entries);
+	explicit Homm3ImageProvider(const std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > &lod_entries);
 
 	virtual QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
 
 private:
-	const std::map<std::string, std::tuple<std::string, LodEntry> > &m_lod_entries;
+	std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > m_lod_entries;
 };

@@ -11,33 +11,43 @@
 
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <tuple>
+#include <utility>
 
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
+#include <QtQml/QQmlContext>
 
 #include "def_file.h"
 #include "homm3_image_provider.h"
+#include "homm3map.h"
 #include "lod_archive.h"
+#include "map_object.h"
 
 #include "vcmi/CBinaryReader.h"
-#include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"
 
 int main(int argc, char **argv)
 {
 	try
 	{
-		if (argc < 2)
+		if (argc < 3)
 		{
-			fprintf(stderr, "ERROR: not enough arguments\n");
+			fprintf(stderr,
+				"ERROR: not enough arguments\n"
+				"\n"
+				"USAGE: %s map archive [archive ...]\n"
+				"\twhere archive is usually H3sprite.lod and H3ab_spr.lod\n",
+				argv[0]);
+
 			return -1;
 		}
 
-		std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
+		std::shared_ptr<std::map<std::string, std::tuple<std::string, LodEntry> > > lod_entries = std::make_shared<std::map<std::string, std::tuple<std::string, LodEntry> > >();
 
-		for (int i = 1; i < argc; ++i)
+		for (int i = 2; i < argc; ++i)
 		{
 			CFileInputStream file_stream(std::filesystem::path(argv[i]));
 			CBinaryReader reader(&file_stream);
@@ -45,7 +55,7 @@ int main(int argc, char **argv)
 
 			for (auto iter = files.begin(); iter != files.end(); ++iter)
 			{
-				lod_entries[iter->name] = std::tie(argv[i], *iter);
+				(*lod_entries)[iter->name] = std::tie(argv[i], *iter);
 			}
 		}
 
@@ -53,12 +63,21 @@ int main(int argc, char **argv)
 		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
+		Homm3MapSingleton::getInstance()->lod_entries = lod_entries;
+
 		QGuiApplication app(argc, argv);
 
+		qmlRegisterType<Homm3Map>("homm3map", 1, 0, "Homm3Map");
+
 		QQmlApplicationEngine engine;
-		const QUrl url(QStringLiteral("qrc:/main.qml"));
 
 		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider(lod_entries));
+
+		auto map_object = new Homm3MapObject(&engine);
+		map_object->loadMap(QString::fromLocal8Bit(argv[1]));
+		engine.rootContext()->setContextProperty(QStringLiteral("map_object"), map_object);
+
+		const QUrl url(QStringLiteral("qrc:/main.qml"));
 
 		QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app, [url](QObject *obj, const QUrl &objUrl) {
 			if ((!obj) && (url == objUrl)) {
