@@ -9,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 
 #include <QtCore/QObject>
 #include <QtQuick/QQuickFramebufferObject>
@@ -30,9 +31,15 @@ public:
 
 	Q_INVOKABLE void loadMap();
 
+	bool hasMap() const;
+
 	Q_INVOKABLE int getMapWidth() const;
 	Q_INVOKABLE int getMapHeight() const;
 	Q_INVOKABLE int getMapLevels() const;
+
+	std::tuple<std::string, int, int> getTerrainTile(int x, int y, int level) const;
+	std::tuple<std::string, int, int> getRiverTile(int x, int y, int level) const;
+	std::tuple<std::string, int, int> getRoadTile(int x, int y, int level) const;
 
 	void updateWidth();
 	void updateHeight();

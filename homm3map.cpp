@@ -152,8 +152,12 @@ void Homm3MapRenderer::render()
 	m_program.setAttributeArray(m_textureAttr, m_texcoords.constData());
 	glBindTexture(GL_TEXTURE_2D, m_texture_id);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glDrawArrays(GL_TRIANGLES, 0, m_vertices.size());
 
+	glDisable(GL_BLEND);
 	m_program.disableAttributeArray(m_vertexAttr);
 	m_program.disableAttributeArray(m_textureAttr);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -199,6 +203,99 @@ void Homm3MapRenderer::prepareRenderData()
 			if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > i))
 			{
 				m_texture_atlas.insertItem(TextureItem("edg.def", 0, i, -1), QSize(def_file.fullWidth, def_file.fullHeight));
+			}
+		}
+
+		if (m_item->hasMap())
+		{
+			// load terrain, rivers and roads
+			for (int level = 0; level < m_item->getMapLevels(); ++level)
+			{
+				for (int tile_y = 0; tile_y < m_item->getMapHeight(); ++tile_y)
+				{
+					for (int tile_x = 0; tile_x < m_item->getMapWidth(); ++tile_x)
+					{
+						auto tile_info = m_item->getTerrainTile(tile_x, tile_y, level);
+
+						Def def_file;
+
+						{
+							auto def_iter = defs_map.find(std::make_tuple(std::get<0>(tile_info), -1));
+							if (def_iter == defs_map.end())
+							{
+								def_file = loadDefFile(std::get<0>(tile_info), -1);
+
+								if (def_file.type != DefType::unknown)
+								{
+									defs_map[std::make_tuple(std::get<0>(tile_info), -1)] = def_file;
+								}
+							}
+							else
+							{
+								def_file = def_iter->second;
+							}
+						}
+
+						if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(tile_info)))
+						{
+							// TODO: processing of animated water and rivers
+							m_texture_atlas.insertItem(TextureItem(std::get<0>(tile_info), 0, std::get<1>(tile_info), -1), QSize(def_file.fullWidth, def_file.fullHeight));
+						}
+
+						auto river_info = m_item->getRiverTile(tile_x, tile_y, level);
+						if (!std::get<0>(river_info).empty())
+						{
+							{
+								auto def_iter = defs_map.find(std::make_tuple(std::get<0>(river_info), -1));
+								if (def_iter == defs_map.end())
+								{
+									def_file = loadDefFile(std::get<0>(river_info), -1);
+
+									if (def_file.type != DefType::unknown)
+									{
+										defs_map[std::make_tuple(std::get<0>(river_info), -1)] = def_file;
+									}
+								}
+								else
+								{
+									def_file = def_iter->second;
+								}
+							}
+
+							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(river_info)))
+							{
+								// TODO: processing of animated water and rivers
+								m_texture_atlas.insertItem(TextureItem(std::get<0>(river_info), 0, std::get<1>(river_info), -1), QSize(def_file.fullWidth, def_file.fullHeight));
+							}
+						}
+
+						auto road_info = m_item->getRoadTile(tile_x, tile_y, level);
+						if (!std::get<0>(road_info).empty())
+						{
+							{
+								auto def_iter = defs_map.find(std::make_tuple(std::get<0>(road_info), -1));
+								if (def_iter == defs_map.end())
+								{
+									def_file = loadDefFile(std::get<0>(road_info), -1);
+
+									if (def_file.type != DefType::unknown)
+									{
+										defs_map[std::make_tuple(std::get<0>(road_info), -1)] = def_file;
+									}
+								}
+								else
+								{
+									def_file = def_iter->second;
+								}
+							}
+
+							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(road_info)))
+							{
+								m_texture_atlas.insertItem(TextureItem(std::get<0>(road_info), 0, std::get<1>(road_info), -1), QSize(def_file.fullWidth, def_file.fullHeight));
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -252,6 +349,78 @@ void Homm3MapRenderer::prepareRenderData()
 		m_vertices.clear();
 		m_texcoords.clear();
 
+		QRect tex_rect;
+
+		if (m_item->hasMap())
+		{
+			// TODO: animate water and rivers
+
+			// draw terrain, rivers and roads
+			for (int level = 0; level < m_item->getMapLevels(); ++level)
+			{
+				for (int tile_y = 0; tile_y < m_item->getMapHeight(); ++tile_y)
+				{
+					for (int tile_x = 0; tile_x < m_item->getMapWidth(); ++tile_x)
+					{
+						auto tile_info = m_item->getTerrainTile(tile_x, tile_y, level);
+
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+						m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+
+						tex_rect = m_texture_atlas.findItem(TextureItem(std::get<0>(tile_info), 0, std::get<1>(tile_info), -1));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+
+						auto river_info = m_item->getRiverTile(tile_x, tile_y, level);
+						if (!std::get<0>(river_info).empty())
+						{
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+
+							tex_rect = m_texture_atlas.findItem(TextureItem(std::get<0>(river_info), 0, std::get<1>(river_info), -1));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						}
+
+						auto road_info = m_item->getRoadTile(tile_x, tile_y, level);
+						if (!std::get<0>(road_info).empty())
+						{
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
+							m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+
+							tex_rect = m_texture_atlas.findItem(TextureItem(std::get<0>(road_info), 0, std::get<1>(road_info), -1));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+							m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+						}
+					}
+				}
+			}
+		}
+
 		// top left edge
 		m_vertices << QVector3D(0, 0, 0);
 		m_vertices << QVector3D(tile_size, 0, 0);
@@ -260,7 +429,7 @@ void Homm3MapRenderer::prepareRenderData()
 		m_vertices << QVector3D(0, tile_size, 0);
 		m_vertices << QVector3D(tile_size, tile_size, 0);
 
-		QRect tex_rect = m_texture_atlas.findItem(TextureItem("edg.def", 0, 16, -1));
+		tex_rect = m_texture_atlas.findItem(TextureItem("edg.def", 0, 16, -1));
 		m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
 		m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
 		m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
@@ -481,6 +650,11 @@ void Homm3Map::loadMap()
 	}
 }
 
+bool Homm3Map::hasMap() const
+{
+	return static_cast<bool>(m_map);
+}
+
 int Homm3Map::getMapWidth() const
 {
 	if (!m_map)
@@ -509,6 +683,86 @@ int Homm3Map::getMapLevels() const
 	}
 
 	return (m_map->twoLevel ? 2 : 1);
+}
+
+std::tuple<std::string, int, int> Homm3Map::getTerrainTile(int x, int y, int level) const
+{
+	if ((!m_map) || (x < 0) || (x >= m_map->width) || (y < 0) || (y >= m_map->height) || (level < 0) || (level >= getMapLevels()))
+	{
+		return std::make_tuple("rocktl.def", 0, 0);
+	}
+
+	const auto &tile = m_map->getTile(int3(x, y, level));
+
+	static const std::map<ETerrainType, std::string> terrain_type_to_name_map = {
+		{ ETerrainType::DIRT,         "dirttl.def" },
+		{ ETerrainType::SAND,         "sandtl.def" },
+		{ ETerrainType::GRASS,        "grastl.def" },
+		{ ETerrainType::SNOW,         "snowtl.def" },
+		{ ETerrainType::SWAMP,        "swmptl.def" },
+		{ ETerrainType::ROUGH,        "rougtl.def" },
+		{ ETerrainType::SUBTERRANEAN, "subbtl.def" },
+		{ ETerrainType::LAVA,         "lavatl.def" },
+		{ ETerrainType::WATER,        "watrtl.def" },
+		{ ETerrainType::ROCK,         "rocktl.def" },
+	};
+
+	auto terrain_type_iter = terrain_type_to_name_map.find(tile.terType);
+	if (terrain_type_iter == terrain_type_to_name_map.end())
+	{
+		return std::make_tuple("rocktl.def", 0, 0);
+	}
+
+	return std::make_tuple(terrain_type_iter->second, tile.terView, tile.extTileFlags & 0x03);
+}
+
+std::tuple<std::string, int, int> Homm3Map::getRiverTile(int x, int y, int level) const
+{
+	if ((!m_map) || (x < 0) || (x >= m_map->width) || (y < 0) || (y >= m_map->height) || (level < 0) || (level >= getMapLevels()))
+	{
+		return std::make_tuple(std::string(), 0, 0);
+	}
+
+	const auto &tile = m_map->getTile(int3(x, y, level));
+
+	static const std::map<ERiverType, std::string> river_type_to_name_map = {
+		{ ERiverType::CLEAR_RIVER, "clrrvr.def" },
+		{ ERiverType::ICY_RIVER,   "icyrvr.def" },
+		{ ERiverType::MUDDY_RIVER, "mudrvr.def" },
+		{ ERiverType::LAVA_RIVER,  "lavrvr.def" },
+	};
+
+	auto river_type_iter = river_type_to_name_map.find(tile.riverType);
+	if (river_type_iter == river_type_to_name_map.end())
+	{
+		return std::make_tuple(std::string(), 0, 0);
+	}
+
+	return std::make_tuple(river_type_iter->second, tile.riverDir, (tile.extTileFlags >> 2) & 0x03);
+}
+
+std::tuple<std::string, int, int> Homm3Map::getRoadTile(int x, int y, int level) const
+{
+	if ((!m_map) || (x < 0) || (x >= m_map->width) || (y < 0) || (y >= m_map->height) || (level < 0) || (level >= getMapLevels()))
+	{
+		return std::make_tuple(std::string(), 0, 0);
+	}
+
+	const auto &tile = m_map->getTile(int3(x, y, level));
+
+	static const std::map<ERoadType, std::string> road_type_to_name_map = {
+		{ ERoadType::DIRT_ROAD,        "dirtrd.def" },
+		{ ERoadType::GRAVEL_ROAD,      "gravrd.def" },
+		{ ERoadType::COBBLESTONE_ROAD, "cobbrd.def" },
+	};
+
+	auto road_type_iter = road_type_to_name_map.find(tile.roadType);
+	if (road_type_iter == road_type_to_name_map.end())
+	{
+		return std::make_tuple(std::string(), 0, 0);
+	}
+
+	return std::make_tuple(road_type_iter->second, tile.roadDir, (tile.extTileFlags >> 4) & 0x03);
 }
 
 void Homm3Map::updateWidth()
