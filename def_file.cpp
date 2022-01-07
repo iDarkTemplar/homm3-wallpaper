@@ -12,6 +12,8 @@
 #include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"
 
+#include <string.h>
+
 #include <stdexcept>
 
 namespace {
@@ -263,6 +265,26 @@ Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry)
 				throw std::runtime_error("Invalid frame data size");
 			}
 		}
+	}
+
+	// fix palette, set predefined values
+	switch (result.type)
+	{
+	case DefType::sprite:
+		memset(result.rawPalette.data(), 0, 3 * 8);
+		break;
+
+	case DefType::map:
+	case DefType::map_hero:
+		memset(result.rawPalette.data(), 0, 3);
+		memset(result.rawPalette.data() + 3, 0, 3);
+		memset(result.rawPalette.data() + 12, 0, 3);
+		// also process later hero color in palette[5]
+		break;
+
+	case DefType::terrain:
+		memset(result.rawPalette.data(), 0, 3 * 5);
+		break;
 	}
 
 	return result;
