@@ -21,6 +21,9 @@ set (SOURCES
 	vcmi/CBinaryReader.cpp
 	vcmi/CCompressedStream.cpp
 	vcmi/CFileInputStream.cpp
+	vcmi/CMap.cpp
+	vcmi/MapFormatH3M.cpp
+	vcmi/ObjectTemplate.cpp
 	)
 
 set(HEADERS
@@ -34,8 +37,16 @@ set(HEADERS
 	vcmi/CCompressedStream.h
 	vcmi/CFileInputStream.h
 	vcmi/CInputStream.h
+	vcmi/CGTownInstance.h
+	vcmi/CMap.h
+	vcmi/CMapDefines.h
+	vcmi/CObjectHandler.h
+	vcmi/CQuest.h
 	vcmi/CStream.h
 	vcmi/GameConstants.h
+	vcmi/MapFormatH3M.h
+	vcmi/ObjectTemplate.h
+	vcmi/int3.h
 	)
 
 set(RESOURCES

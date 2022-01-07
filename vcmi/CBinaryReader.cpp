@@ -102,6 +102,16 @@ std::string CBinaryReader::readString()
 
 }
 
+void CBinaryReader::skipString()
+{
+	uint32_t len = readUInt32();
+
+	if (len > 0)
+	{
+		skip(len);
+	}
+}
+
 void CBinaryReader::skip(int count)
 {
 	stream->skip(count);

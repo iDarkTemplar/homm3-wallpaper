@@ -10,26 +10,24 @@
 
 #pragma once
 
-#include "CMapService.h"
-#include "../GameConstants.h"
-#include "../ResourceSet.h"
-#include "../mapObjects/ObjectTemplate.h"
+#include "int3.h"
 
-#include "../int3.h"
+#include "CBinaryReader.h"
+#include "CMap.h"
+#include "CQuest.h"
+#include "ObjectTemplate.h"
 
-#include "../filesystem/CBinaryReader.h"
+#include <list>
+#include <map>
+#include <memory>
+#include <set>
 
-class CGHeroInstance;
-class CArtifactInstance;
 class CGObjectInstance;
-class CGSeerHut;
-class IQuestObject;
+class CGDwelling;
 class CGTownInstance;
-class CCreatureSet;
 class CInputStream;
 
-
-class DLL_LINKAGE CMapLoaderH3M : public IMapLoader
+class CMapLoaderH3M
 {
 public:
 	/**
@@ -37,7 +35,7 @@ public:
 	 *
 	 * @param stream a stream containing the map data
 	 */
-	CMapLoaderH3M(CInputStream * stream);
+	explicit CMapLoaderH3M(CInputStream *stream);
 
 	/**
 	 * Destructor.
@@ -49,17 +47,7 @@ public:
 	 *
 	 * @return a unique ptr of the loaded map class
 	 */
-	std::unique_ptr<CMap> loadMap() override;
-
-	/**
-	 * Loads the VCMI/H3 map header.
-	 *
-	 * @return a unique ptr of the loaded map header class
-	 */
-	std::unique_ptr<CMapHeader> loadMapHeader() override;
-
-	/** true if you want to enable the map loader profiler to see how long a specific part took; default=false */
-	static const bool IS_PROFILING_ENABLED;
+	std::unique_ptr<CMap> loadMap();
 
 private:
 	/**
@@ -112,16 +100,13 @@ private:
 	 *
 	 * @param hero the hero which should hold those artifacts
 	 */
-	void loadArtifactsOfHero(CGHeroInstance * hero);
+	void skipArtifactsOfHero();
 
 	/**
-	 * Loads an artifact to the given slot of the specified hero.
+	 * Loads an artifact.
 	 *
-	 * @param hero the hero which should hold that artifact
-	 * @param slot the artifact slot where to place that artifact
-	 * @return true if it loaded an artifact
 	 */
-	bool loadArtifactToSlot(CGHeroInstance * hero, int slot);
+	void skipArtifact(size_t count);
 
 	/**
 	 * Read rumors.
@@ -151,10 +136,9 @@ private:
 	/**
 	 * Reads a creature set.
 	 *
-	 * @param out the loaded creature set
 	 * @param number the count of creatures to read
 	 */
-	void readCreatureSet(CCreatureSet * out, int number);
+	void skipCreatureSet(int number);
 
 	/**
 	 * Reads a hero.
@@ -162,21 +146,21 @@ private:
 	 * @param idToBeGiven the object id which should be set for the hero
 	 * @return a object instance
 	 */
-	CGObjectInstance * readHero(ObjectInstanceID idToBeGiven, const int3 & initialPos);
+	CGObjectInstance* readHero();
 
 	/**
 	 * Reads a seer hut.
 	 *
 	 * @return the initialized seer hut object
 	 */
-	CGSeerHut * readSeerHut();
+	void skipSeerHut();
 
 	/**
 	 * Reads a quest for the given quest guard.
 	 *
 	 * @param guard the quest guard where that quest should be applied to
 	 */
-	void readQuest(IQuestObject * guard);
+	CQuestMission skipQuest();
 
 	/**
 	 * Reads a town.
@@ -184,7 +168,7 @@ private:
 	 * @param castleID the id of the castle type
 	 * @return the loaded town object
 	 */
-	CGTownInstance * readTown(int castleID);
+	CGTownInstance* readTown();
 
 	/**
 	 * Converts buildings to the specified castle id.
@@ -194,7 +178,7 @@ private:
 	 * @param addAuxiliary true if the village hall should be added
 	 * @return the converted buildings
 	 */
-	std::set<BuildingID> convertBuildings(const std::set<BuildingID> h3m, int castleID, bool addAuxiliary = true);
+	std::set<BuildingID> convertBuildings(const std::set<BuildingID> &h3m, int castleID, bool addAuxiliary = true);
 
 	/**
 	 * Reads events.
@@ -202,53 +186,35 @@ private:
 	void readEvents();
 
 	/**
-	* read optional message and optional guards
-	*/
-	void readMessageAndGuards(std::string& message, CCreatureSet * guards);
+	 * read optional message and optional guards
+	 */
+	void skipMessageAndGuards();
 
-	void readSpells(std::set<SpellID> & dest);
+	void skipSpells();
 
-	void readResourses(TResources& resources);
-
-	template <class Indenifier>
-	void readBitmask(std::set<Indenifier> &dest, const int byteCount, const int limit, bool negate = true);
+	void skipResources();
 
 	/** Reads bitmask to boolean vector
-	* @param dest destination vector, shall be filed with "true" values
-	* @param byteCount size in bytes of bimask
-	* @param limit max count of vector elements to alter
-	* @param negate if true then set bit in mask means clear flag in vertor
-	*/
-	void readBitmask(std::vector<bool> & dest, const int byteCount, const int limit, bool negate = true);
-
-	/**
-	 * Reverses the input argument.
-	 *
-	 * @param arg the input argument
-	 * @return the reversed 8-bit integer
+	 * @param dest destination vector, shall be filed with "true" values
+	 * @param byteCount size in bytes of bimask
+	 * @param limit max count of vector elements to alter
+	 * @param negate if true then set bit in mask means clear flag in vertor
 	 */
-	ui8 reverse(ui8 arg);
+	void readBitmask(std::vector<bool> &dest, const int byteCount, const int limit, bool negate = true);
 
 	/**
 	* Helper to read map position
 	*/
-	inline int3 readInt3()
-	{
-		int3 p;
-		p.x = reader.readUInt8();
-		p.y = reader.readUInt8();
-		p.z = reader.readUInt8();
-		return p;
-	}
+	int3 readInt3();
 
-	void afterRead();
+	void skipInt3();
 
 	/** List of templates loaded from the map, used on later stage to create
 	 *  objects but not needed for fully functional CMap */
 	std::vector<ObjectTemplate> templates;
 
 	/** ptr to the map object which gets filled by data from the buffer */
-	CMap * map;
+	CMap* map;
 
 	/**
 	 * ptr to the map header object which gets filled by data from the buffer.
@@ -257,6 +223,5 @@ private:
 	std::unique_ptr<CMapHeader> mapHeader;
 
 	CBinaryReader reader;
-	CInputStream * inputStream;
-
+	CInputStream *inputStream;
 };

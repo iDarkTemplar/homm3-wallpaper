@@ -76,6 +76,7 @@ public:
 	int64_t readInt64();
 
 	std::string readString();
+	void skipString();
 
 	template <size_t N>
 	std::string readSizedString()
