@@ -30,7 +30,7 @@ struct DefGroupHelperData
 
 } // unnamed namespace
 
-Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry)
+Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry, int player_color)
 {
 	Def result;
 
@@ -278,10 +278,35 @@ Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry)
 
 	case DefType::map:
 	case DefType::map_hero:
-		memset(result.rawPalette.data(), 0, 3);
-		memset(result.rawPalette.data() + 3, 0, 3);
-		memset(result.rawPalette.data() + 12, 0, 3);
-		// also process later hero color in palette[5]
+		{
+			memset(result.rawPalette.data(), 0, 3);
+			memset(result.rawPalette.data() + 3, 0, 3);
+			memset(result.rawPalette.data() + 12, 0, 3);
+
+			static const uint8_t player_colors_array[] = {
+				0xff, 0x00, 0x00, // player 1 - red
+				0x31, 0x52, 0xff, // player 2 - blue
+				0x9c, 0x73, 0x52, // player 3 - tan
+				0x42, 0x94, 0x29, // player 4 - green
+				0xff, 0x84, 0x00, // player 5 - orange
+				0x8c, 0x29, 0xa5, // player 6 - purple
+				0x09, 0x9c, 0xa5, // player 7 - teal
+				0xc6, 0x7b, 0x8c, // player 8 - pink
+			};
+
+			static const uint8_t neutral_player_color_array[] = {
+				0x84, 0x84, 0x84, // neutral player
+			};
+
+			if ((player_color >= 0) && (player_color < ((sizeof(player_colors_array) / sizeof(player_colors_array[0])) / 3)))
+			{
+				memcpy(result.rawPalette.data() + 15, player_colors_array + 3 * player_color, 3);
+			}
+			else
+			{
+				memcpy(result.rawPalette.data() + 15, neutral_player_color_array, 3);
+			}
+		}
 		break;
 
 	case DefType::terrain:

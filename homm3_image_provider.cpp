@@ -50,7 +50,7 @@ QImage Homm3ImageProvider::requestImage(const QString &id, QSize *size, const QS
 		return QImage();
 	}
 
-	Def image_def = read_def_file(std::get<0>(lod_entries_iter->second), std::get<1>(lod_entries_iter->second));
+	Def image_def = read_def_file(std::get<0>(lod_entries_iter->second), std::get<1>(lod_entries_iter->second), -1);
 
 	static const std::set<DefType> allowed_name_set =
 	{

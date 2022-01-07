@@ -10,4 +10,4 @@
 
 #include "globals.h"
 
-Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry);
+Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry, int player_color);
