@@ -77,6 +77,17 @@ public:
 
 	std::string readString();
 
+	template <size_t N>
+	std::string readSizedString()
+	{
+		char data[N + 1];
+		data[N] = 0;
+
+		read(reinterpret_cast<uint8_t*>(data), N);
+
+		return std::string(data);
+	}
+
 	inline bool readBool()
 	{
 		return readUInt8() != 0;

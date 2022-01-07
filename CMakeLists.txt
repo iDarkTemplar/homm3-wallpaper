@@ -10,6 +10,7 @@ find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
 set (SOURCES
+	def_file.cpp
 	main.cpp
 	lod_archive.cpp
 	random.cpp
@@ -19,6 +20,8 @@ set (SOURCES
 	)
 
 set(HEADERS
+	def_file.h
+	globals.h
 	lod_archive.h
 	random.h
 	vcmi/CBinaryReader.h

@@ -8,14 +8,6 @@
 
 #pragma once
 
-#include <stdint.h>
-
-#include <istream>
-#include <string>
-#include <vector>
-
 #include "globals.h"
 
-#include "vcmi/CBinaryReader.h"
-
-std::vector<LodEntry> read_lod_archive_header(CBinaryReader &reader);
+Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry);

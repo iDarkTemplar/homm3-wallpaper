@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <filesystem>
 #include <stdexcept>
 
+#include "def_file.h"
 #include "lod_archive.h"
 
 #include "vcmi/CBinaryReader.h"

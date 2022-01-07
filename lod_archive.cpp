@@ -12,14 +12,6 @@
 
 #include <stdexcept>
 
-LodEntry::LodEntry()
-	: offset(0)
-	, full_size(0)
-	, compressed_size(0)
-	, filetype(static_cast<LodFileType>(0))
-{
-}
-
 std::vector<LodEntry> read_lod_archive_header(CBinaryReader &reader)
 {
 	std::vector<LodEntry> result;
@@ -47,15 +39,10 @@ std::vector<LodEntry> read_lod_archive_header(CBinaryReader &reader)
 	{
 		LodEntry entry;
 
-		char filename[17];
-		filename[sizeof(filename) - 1] = 0;
-
-		reader.read(reinterpret_cast<uint8_t*>(filename), sizeof(filename) - 1);
-
-		entry.name            = filename;
+		entry.name            = reader.readSizedString<16>();
 		entry.offset          = reader.readUInt32();
 		entry.full_size       = reader.readUInt32();
-		entry.filetype        = static_cast<LodFileType>(reader.readUInt32());
+		entry.filetype        = static_cast<DefType>(reader.readUInt32());
 		entry.compressed_size = reader.readUInt32();
 
 		result.push_back(entry);
