@@ -42,7 +42,7 @@ public:
 	void mapUpdated();
 	void prepareRenderData();
 
-	Def loadDefFile(const std::string &name, int special);
+	static Def loadDefFile(const std::string &name, int special);
 
 private:
 	const Homm3Map *m_item;
@@ -178,31 +178,38 @@ void Homm3MapRenderer::prepareRenderData()
 		// first load all images
 		std::map<std::tuple<std::string, int>, Def> defs_map;
 
-		// load edges
-		for (int i = 16; i < 36; ++i)
-		{
-			Def def_file;
-
+		auto load_def_file_func = [&defs_map](const std::string &name, int special) -> Def {
+			auto def_iter = defs_map.find(std::make_tuple(name, special));
+			if (def_iter == defs_map.end())
 			{
-				auto def_iter = defs_map.find(std::make_tuple("edg.def", -1));
-				if (def_iter == defs_map.end())
-				{
-					def_file = loadDefFile("edg.def", -1);
+				Def result = loadDefFile(name, special);
 
-					if (def_file.type != DefType::unknown)
+				if (result.type != DefType::unknown)
+				{
+					defs_map[std::make_tuple(name, special)] = result;
+				}
+
+				return result;
+			}
+			else
+			{
+				return def_iter->second;
+			}
+		};
+
+		// load edges
+		{
+			Def def_file = load_def_file_func("edg.def", -1);
+
+			if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0))
+			{
+				for (int i = 16; i < 36; ++i)
+				{
+					if (def_file.groups[0].frames.size() > i)
 					{
-						defs_map[std::make_tuple("edg.def", -1)] = def_file;
+						m_texture_atlas.insertItem(TextureItem("edg.def", 0, i, -1), QSize(def_file.fullWidth, def_file.fullHeight));
 					}
 				}
-				else
-				{
-					def_file = def_iter->second;
-				}
-			}
-
-			if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > i))
-			{
-				m_texture_atlas.insertItem(TextureItem("edg.def", 0, i, -1), QSize(def_file.fullWidth, def_file.fullHeight));
 			}
 		}
 
@@ -217,24 +224,7 @@ void Homm3MapRenderer::prepareRenderData()
 					{
 						auto tile_info = m_item->getTerrainTile(tile_x, tile_y, level);
 
-						Def def_file;
-
-						{
-							auto def_iter = defs_map.find(std::make_tuple(std::get<0>(tile_info), -1));
-							if (def_iter == defs_map.end())
-							{
-								def_file = loadDefFile(std::get<0>(tile_info), -1);
-
-								if (def_file.type != DefType::unknown)
-								{
-									defs_map[std::make_tuple(std::get<0>(tile_info), -1)] = def_file;
-								}
-							}
-							else
-							{
-								def_file = def_iter->second;
-							}
-						}
+						Def def_file = load_def_file_func(std::get<0>(tile_info), -1);
 
 						if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(tile_info)))
 						{
@@ -245,22 +235,7 @@ void Homm3MapRenderer::prepareRenderData()
 						auto river_info = m_item->getRiverTile(tile_x, tile_y, level);
 						if (!std::get<0>(river_info).empty())
 						{
-							{
-								auto def_iter = defs_map.find(std::make_tuple(std::get<0>(river_info), -1));
-								if (def_iter == defs_map.end())
-								{
-									def_file = loadDefFile(std::get<0>(river_info), -1);
-
-									if (def_file.type != DefType::unknown)
-									{
-										defs_map[std::make_tuple(std::get<0>(river_info), -1)] = def_file;
-									}
-								}
-								else
-								{
-									def_file = def_iter->second;
-								}
-							}
+							def_file = load_def_file_func(std::get<0>(river_info), -1);
 
 							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(river_info)))
 							{
@@ -272,22 +247,7 @@ void Homm3MapRenderer::prepareRenderData()
 						auto road_info = m_item->getRoadTile(tile_x, tile_y, level);
 						if (!std::get<0>(road_info).empty())
 						{
-							{
-								auto def_iter = defs_map.find(std::make_tuple(std::get<0>(road_info), -1));
-								if (def_iter == defs_map.end())
-								{
-									def_file = loadDefFile(std::get<0>(road_info), -1);
-
-									if (def_file.type != DefType::unknown)
-									{
-										defs_map[std::make_tuple(std::get<0>(road_info), -1)] = def_file;
-									}
-								}
-								else
-								{
-									def_file = def_iter->second;
-								}
-							}
+							def_file = load_def_file_func(std::get<0>(road_info), -1);
 
 							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(road_info)))
 							{
