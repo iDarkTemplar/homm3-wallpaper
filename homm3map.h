@@ -69,7 +69,10 @@ public:
 	Q_INVOKABLE void loadMap(const QString &filename);
 	Q_INVOKABLE void toggleLevel();
 
-private Q_SLOT:
+Q_SIGNALS:
+	void loadingFinished();
+
+private Q_SLOTS:
 	void mapLoaded();
 
 private:
@@ -111,7 +114,7 @@ public:
 
 	void prepareRenderData();
 
-private Q_SLOT:
+private Q_SLOTS:
 	void updateFrames();
 
 protected:

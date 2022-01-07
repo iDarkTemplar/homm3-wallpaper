@@ -1219,4 +1219,6 @@ void Homm3Map::mapLoaded()
 	}
 
 	update();
+
+	Q_EMIT loadingFinished();
 }
