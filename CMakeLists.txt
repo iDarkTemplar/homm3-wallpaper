@@ -12,6 +12,7 @@ find_package(ZLIB REQUIRED)
 set (SOURCES
 	main.cpp
 	lod_archive.cpp
+	random.cpp
 	vcmi/CBinaryReader.cpp
 	vcmi/CCompressedStream.cpp
 	vcmi/CFileInputStream.cpp
@@ -19,6 +20,7 @@ set (SOURCES
 
 set(HEADERS
 	lod_archive.h
+	random.h
 	vcmi/CBinaryReader.h
 	vcmi/CCompressedStream.h
 	vcmi/CFileInputStream.h
