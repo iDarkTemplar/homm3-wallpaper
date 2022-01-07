@@ -27,6 +27,7 @@ TextureAtlas::TextureAtlas()
 	: m_size(1024)
 	, m_current_height(0)
 {
+	insertItem(TextureItem("invalid"), QSize(tile_size, tile_size));
 }
 
 void TextureAtlas::insertItem(const TextureItem &item, const QSize &size)
@@ -80,7 +81,11 @@ QRect TextureAtlas::findItem(const TextureItem &item) const
 	auto iter = m_texture_items.find(item);
 	if (iter == m_texture_items.end())
 	{
-		return QRect();
+		iter = m_texture_items.find(TextureItem("invalid"));
+		if (iter == m_texture_items.end())
+		{
+			return QRect();
+		}
 	}
 
 	return iter->second;

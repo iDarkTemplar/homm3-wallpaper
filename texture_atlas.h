@@ -17,6 +17,8 @@
 
 #include <QtCore/QRect>
 
+#define tile_size 32
+
 struct TextureItem
 {
 	std::string name;
