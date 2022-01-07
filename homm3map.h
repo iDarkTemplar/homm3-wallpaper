@@ -54,6 +54,8 @@ private:
 	std::shared_ptr<CMap> m_map;
 
 	mutable Homm3MapRenderer *m_renderer;
+
+	friend class Homm3MapRenderer;
 };
 
 class Homm3MapRenderer: public QObject, public QQuickFramebufferObject::Renderer, protected QOpenGLFunctions

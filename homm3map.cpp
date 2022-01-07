@@ -8,15 +8,22 @@
 
 #include "homm3map.h"
 
+#include <ctype.h>
+
+#include <algorithm>
+#include <iomanip>
 #include <map>
+#include <sstream>
 #include <tuple>
 
 #include <QtGui/QOpenGLFramebufferObjectFormat>
 #include <QtGui/QVector2D>
 #include <QtGui/QVector3D>
 
+#include "vcmi/CGTownInstance.h"
 #include "vcmi/MapFormatH3M.h"
 
+#include "data_maps.h"
 #include "def_file.h"
 #include "map_object.h"
 #include "random.h"
@@ -39,6 +46,35 @@ const std::map<std::string, std::tuple<SpecialTile, int> > special_tiles_map = {
 	{ "clrrvr.def", { SpecialTile::clrrvr, 12 } },
 	{ "mudrvr.def", { SpecialTile::mudrvr, 12 } },
 	{ "lavrvr.def", { SpecialTile::lavrvr, 9 } },
+};
+
+struct MapItem
+{
+	std::string name;
+	int group = 0;
+	int special = -1; // player color or ground frame
+	size_t total_frames = 1;
+
+	MapItem() = default;
+
+	explicit MapItem(const std::string &l_name)
+		: name(l_name)
+	{
+	}
+};
+
+struct MapItemPosition
+{
+	int placementOrder = 0;
+	int x = 0;
+	int y = 0;
+	bool isHero = false;
+	bool isVisitable = false;
+
+	bool operator<(const MapItemPosition &other) const
+	{
+		return std::tie(other.placementOrder, this->y, this->isHero, this->isVisitable, this->x) < std::tie(this->placementOrder, other.y, other.isHero, other.isVisitable, other.x);
+	}
 };
 
 } // unnamed namespace
@@ -177,6 +213,7 @@ void Homm3MapRenderer::prepareRenderData()
 
 		// first load all images
 		std::map<std::tuple<std::string, int>, Def> defs_map;
+		std::map<MapItemPosition, std::vector<MapItem> > map_objects;
 
 		auto load_def_file_func = [&defs_map](const std::string &name, int special) -> Def {
 			auto def_iter = defs_map.find(std::make_tuple(name, special));
@@ -272,6 +309,138 @@ void Homm3MapRenderer::prepareRenderData()
 						if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(road_info)))
 						{
 							m_texture_atlas.insertItem(TextureItem(std::get<0>(road_info), 0, std::get<1>(road_info), -1), QSize(def_file.fullWidth, def_file.fullHeight));
+						}
+					}
+				}
+			}
+
+			for (auto iter = m_item->m_map->objects.begin(); iter != m_item->m_map->objects.end(); ++iter)
+			{
+				if ((((*iter)->ID == Obj::ARTIFACT) && ((*iter)->subID == static_cast<decltype((*iter)->subID)>(ArtifactID::GRAIL))) || ((*iter)->ID == Obj::EVENT))
+				{
+					// skip grail and events
+					continue;
+				}
+
+				if ((*iter)->pos.z != level)
+				{
+					// skip another map level
+					continue;
+				}
+
+				MapItemPosition pos;
+
+				pos.x = (*iter)->pos.x;
+				pos.y = (*iter)->pos.y;
+				pos.placementOrder = (*iter)->appearance.printPriority;
+
+				if (((*iter)->ID == Obj::HERO) || ((*iter)->ID == Obj::RANDOM_HERO) || ((*iter)->ID == Obj::HERO_PLACEHOLDER))
+				{
+					pos.isHero = true;
+				}
+
+				pos.isVisitable = (*iter)->appearance.isVisitable;
+
+				MapItem item { (*iter)->appearance.animationFile };
+
+				// lowercase name
+				std::transform(item.name.begin(), item.name.end(), item.name.begin(), [](unsigned char c) { return tolower(c); });
+
+				// towns, dwellings, mines, garrisons, lighthouses, shipyards have owners
+				if (((*iter)->ID != Obj::HERO) && ((*iter)->ID != Obj::RANDOM_HERO) && ((*iter)->ID != Obj::HERO_PLACEHOLDER) && (static_cast<int>((*iter)->tempOwner) >= 0) && ((*iter)->tempOwner < PlayerColor::PLAYER_LIMIT_I))
+				{
+					item.special = static_cast<int>((*iter)->tempOwner);
+				}
+
+				Def def_file = load_def_file_func(item.name, item.special);
+
+				if ((def_file.type != DefType::unknown) && (def_file.groups.size() > item.group) && (def_file.groups[item.group].frames.size() > 0))
+				{
+					item.total_frames = def_file.groups[item.group].frames.size();
+
+					for (size_t frame = 0; frame < def_file.groups[item.group].frames.size(); ++frame)
+					{
+						m_texture_atlas.insertItem(TextureItem(item.name, item.group, frame, item.special), QSize(def_file.fullWidth, def_file.fullHeight));
+					}
+				}
+
+				// heroes have flags, insert flag before hero
+				if (((*iter)->ID == Obj::HERO) || ((*iter)->ID == Obj::RANDOM_HERO) || ((*iter)->ID == Obj::HERO_PLACEHOLDER))
+				{
+					auto index = std::min<int>(std::max<int>(static_cast<int>((*iter)->tempOwner), 0), hero_flags_map.size() - 1);
+					MapItem flag_item { hero_flags_map[index].first };
+					flag_item.group = hero_flags_map[index].second;
+
+					def_file = load_def_file_func(flag_item.name, flag_item.special);
+
+					if ((def_file.type != DefType::unknown) && (def_file.groups.size() > flag_item.group) && (def_file.groups[flag_item.group].frames.size() > 0))
+					{
+						flag_item.total_frames = def_file.groups[flag_item.group].frames.size();
+
+						for (size_t frame = 0; frame < def_file.groups[flag_item.group].frames.size(); ++frame)
+						{
+							m_texture_atlas.insertItem(TextureItem(flag_item.name, flag_item.group, frame, flag_item.special), QSize(def_file.fullWidth, def_file.fullHeight));
+						}
+					}
+
+					map_objects[pos].push_back(flag_item);
+				}
+
+				map_objects[pos].push_back(item);
+
+				// castles may have heroes
+				if (((*iter)->ID == Obj::TOWN) || ((*iter)->ID == Obj::RANDOM_TOWN))
+				{
+					auto town = dynamic_cast<CGTownInstance*>(*iter);
+					if (town != nullptr)
+					{
+						if (town->hero_type)
+						{
+							std::stringstream ss;
+							ss << "ah" << std::setfill('0') << std::setw(2) << static_cast<int>(*(town->hero_type)) << "_e.def";
+							std::string hero_picture = ss.str();
+
+							MapItemPosition hero_pos;
+
+							hero_pos.x = pos.x - 1;
+							hero_pos.y = pos.y;
+							hero_pos.placementOrder = pos.placementOrder;
+							hero_pos.isHero = true;
+							hero_pos.isVisitable = false;
+
+							MapItem hero_item { hero_picture };
+
+							def_file = load_def_file_func(hero_item.name, hero_item.special);
+
+							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > hero_item.group) && (def_file.groups[hero_item.group].frames.size() > 0))
+							{
+								hero_item.total_frames = def_file.groups[hero_item.group].frames.size();
+
+								for (size_t frame = 0; frame < def_file.groups[hero_item.group].frames.size(); ++frame)
+								{
+									m_texture_atlas.insertItem(TextureItem(hero_item.name, hero_item.group, frame, hero_item.special), QSize(def_file.fullWidth, def_file.fullHeight));
+								}
+							}
+
+							auto index = std::min<int>(std::max<int>(static_cast<int>((*iter)->tempOwner), 0), hero_flags_map.size() - 1);
+							MapItem flag_item { hero_flags_map[index].first };
+							flag_item.group = hero_flags_map[index].second;
+
+							def_file = load_def_file_func(flag_item.name, flag_item.special);
+
+							if ((def_file.type != DefType::unknown) && (def_file.groups.size() > flag_item.group) && (def_file.groups[flag_item.group].frames.size() > 0))
+							{
+								flag_item.total_frames = def_file.groups[flag_item.group].frames.size();
+
+								for (size_t frame = 0; frame < def_file.groups[flag_item.group].frames.size(); ++frame)
+								{
+									m_texture_atlas.insertItem(TextureItem(flag_item.name, flag_item.group, frame, flag_item.special), QSize(def_file.fullWidth, def_file.fullHeight));
+								}
+							}
+
+							// insert flag before hero
+							map_objects[hero_pos].push_back(flag_item);
+							map_objects[hero_pos].push_back(hero_item);
 						}
 					}
 				}
@@ -506,6 +675,46 @@ void Homm3MapRenderer::prepareRenderData()
 						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
 						m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
 					}
+				}
+			}
+
+			// draw objects
+			for (auto pos_iter = map_objects.begin(); pos_iter != map_objects.end(); ++pos_iter)
+			{
+				for (auto object_iter = pos_iter->second.begin(); object_iter != pos_iter->second.end(); ++object_iter)
+				{
+					int frame = 0;
+
+					if (object_iter->total_frames > 1)
+					{
+						frame = m_current_frames[object_iter->total_frames];
+
+						AnimatedItem item;
+
+						item.name = object_iter->name;
+						item.group = object_iter->group;
+						item.special = object_iter->special;
+						item.total_frames = object_iter->total_frames;
+						item.is_terrain = false;
+
+						m_animated_items[item][0].insert(m_texcoords.size());
+					}
+
+					tex_rect = m_texture_atlas.findItem(TextureItem(object_iter->name, object_iter->group, frame, object_iter->special));
+
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0);
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0);
+					m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size,                     0);
+
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+					m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
 				}
 			}
 		}
@@ -749,7 +958,15 @@ void Homm3MapRenderer::updateAnimatedItems()
 		{
 			auto tex_rect = m_texture_atlas.findItem(TextureItem(iter->first.name, iter->first.group, m_current_frames[iter->first.total_frames], iter->first.special));
 
-			// TODO: update non-terrain items
+			for (auto coord_iter = iter->second[0].begin(); coord_iter != iter->second[0].end(); ++coord_iter)
+			{
+				m_texcoords[(*coord_iter)    ] = QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+				m_texcoords[(*coord_iter) + 1] = QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+				m_texcoords[(*coord_iter) + 2] = QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+				m_texcoords[(*coord_iter) + 3] = QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
+				m_texcoords[(*coord_iter) + 4] = QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+				m_texcoords[(*coord_iter) + 5] = QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+			}
 		}
 	}
 }
