@@ -23,19 +23,28 @@ ApplicationWindow {
 		fillMode: Image.Tile
 	}
 
-	Flickable {
-		id: root
-
+	MouseArea {
 		anchors.fill: parent
-		leftMargin: contentWidth >= width ? 0 : (width - contentWidth) / 2
-		topMargin: contentHeight >= height ? 0 : (height - contentHeight) / 2
-		contentItem.clip: true
+		acceptedButtons: Qt.RightButton
 
-		contentWidth: map.width
-		contentHeight: map.height
+		onClicked: {
+			map.toggleLevel();
+		}
 
-		Homm3Map {
-			id: map
+		Flickable {
+			id: root
+
+			anchors.fill: parent
+			leftMargin: contentWidth >= width ? 0 : (width - contentWidth) / 2
+			topMargin: contentHeight >= height ? 0 : (height - contentHeight) / 2
+			contentItem.clip: true
+
+			contentWidth: map.width
+			contentHeight: map.height
+
+			Homm3Map {
+				id: map
+			}
 		}
 	}
 }

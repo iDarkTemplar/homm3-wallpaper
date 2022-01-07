@@ -36,24 +36,15 @@ public:
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
 	Q_INVOKABLE void loadMap();
-
-	bool hasMap() const;
-
-	Q_INVOKABLE int getMapWidth() const;
-	Q_INVOKABLE int getMapHeight() const;
-	Q_INVOKABLE int getMapLevels() const;
-
-	std::tuple<std::string, int, int> getTerrainTile(int x, int y, int level) const;
-	std::tuple<std::string, int, int> getRiverTile(int x, int y, int level) const;
-	std::tuple<std::string, int, int> getRoadTile(int x, int y, int level) const;
+	Q_INVOKABLE void toggleLevel();
 
 	void updateWidth();
 	void updateHeight();
 
 private:
 	std::shared_ptr<CMap> m_map;
-
-	mutable Homm3MapRenderer *m_renderer;
+	int m_map_level;
+	bool m_map_updated;
 
 	friend class Homm3MapRenderer;
 };
@@ -63,7 +54,7 @@ class Homm3MapRenderer: public QObject, public QQuickFramebufferObject::Renderer
 	Q_OBJECT
 
 public:
-	explicit Homm3MapRenderer(const Homm3Map *item);
+	Homm3MapRenderer();
 	~Homm3MapRenderer();
 
 	virtual QOpenGLFramebufferObject* createFramebufferObject(const QSize &size) override;
@@ -72,7 +63,6 @@ public:
 
 	virtual void render() override;
 
-	void mapUpdated();
 	void prepareRenderData();
 
 	static Def loadDefFile(const std::string &name, int special);
@@ -80,8 +70,11 @@ public:
 private Q_SLOT:
 	void updateFrames();
 
+protected:
+	virtual void synchronize(QQuickFramebufferObject *item) override;
+
 private:
-	const Homm3Map *m_item;
+	std::shared_ptr<CMap> m_map;
 
 	QOpenGLShaderProgram m_program;
 	int m_vertexAttr = 0;
@@ -90,7 +83,6 @@ private:
 	int m_shaderTexture = 0;
 	GLuint m_texture_id = 0;
 
-	QAtomicInteger<int> m_need_update_map;
 	QVector<QVector3D> m_vertices;
 	QVector<QVector2D> m_texcoords;
 
@@ -115,6 +107,8 @@ private:
 	QTimer m_frame_timer;
 	QAtomicInteger<int> m_need_update_animation;
 	std::map<AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
+	int m_level;
+	bool m_need_update_map;
 
 	void updateAnimatedItems();
 };
