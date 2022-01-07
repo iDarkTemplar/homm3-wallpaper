@@ -20,7 +20,7 @@
 
 #include "vcmi/CMap.h"
 
-#include "map_object.h"
+#include "globals.h"
 #include "texture_atlas.h"
 
 class Homm3MapRenderer;
@@ -34,7 +34,7 @@ public:
 
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
-	Q_INVOKABLE void loadMap();
+	Q_INVOKABLE void loadMap(const QString &filename);
 	Q_INVOKABLE void toggleLevel();
 
 	void updateWidth();
@@ -53,6 +53,17 @@ class Homm3MapRenderer: public QObject, public QQuickFramebufferObject::Renderer
 	Q_OBJECT
 
 public:
+	struct AnimatedItem
+	{
+		std::string name;
+		int group = 0;
+		int special = -1;
+		size_t total_frames = 1;
+		bool is_terrain = false;
+
+		bool operator<(const AnimatedItem &other) const;
+	};
+
 	Homm3MapRenderer();
 	~Homm3MapRenderer();
 
@@ -63,8 +74,6 @@ public:
 	virtual void render() override;
 
 	void prepareRenderData();
-
-	static Def loadDefFile(const std::string &name, int special);
 
 private Q_SLOT:
 	void updateFrames();
@@ -85,23 +94,9 @@ private:
 	QVector<QVector3D> m_vertices;
 	QVector<QVector2D> m_texcoords;
 
-	QVector<int> m_top_edge, m_right_edge, m_bottom_edge, m_left_edge;
-
-	QSize m_image_size;
 	TextureAtlas m_texture_atlas;
 
 	std::map<size_t, size_t> m_current_frames;
-
-	struct AnimatedItem
-	{
-		std::string name;
-		int group = 0;
-		int special = -1;
-		size_t total_frames = 1;
-		bool is_terrain = false;
-
-		bool operator<(const AnimatedItem &other) const;
-	};
 
 	QTimer m_frame_timer;
 	bool m_need_update_animation;
@@ -110,4 +105,21 @@ private:
 	bool m_need_update_map;
 
 	void updateAnimatedItems();
+};
+
+struct MapData
+{
+	std::shared_ptr<CMap> m_map;
+
+	QVector<QVector3D> m_vertices;
+	QVector<QVector2D> m_texcoords;
+
+	TextureAtlas m_texture_atlas;
+
+	std::map<size_t, size_t> m_current_frames;
+
+	std::map<Homm3MapRenderer::AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
+	int m_level = 0;
+
+	QVector<uint8_t> m_texture_data;
 };

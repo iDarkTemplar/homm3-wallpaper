@@ -73,9 +73,7 @@ int main(int argc, char **argv)
 
 		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider(lod_entries));
 
-		auto map_object = new Homm3MapObject(&engine);
-		map_object->loadMap(QString::fromLocal8Bit(argv[1]));
-		engine.rootContext()->setContextProperty(QStringLiteral("map_object"), map_object);
+		engine.rootContext()->setContextProperty(QStringLiteral("map_name"), QString::fromLocal8Bit(argv[1]));
 
 		const QUrl url(QStringLiteral("qrc:/main.qml"));
 

@@ -26,26 +26,3 @@ std::shared_ptr<Homm3MapSingleton> Homm3MapSingleton::getInstance()
 
 	return s_instance;
 }
-
-Homm3MapSingleton::Homm3MapSingleton()
-{
-}
-
-Homm3MapObject::Homm3MapObject(QObject *parent)
-	: QObject(parent)
-	, m_singleton(Homm3MapSingleton::getInstance())
-{
-}
-
-bool Homm3MapObject::loadMap(const QString &filename)
-{
-	std::unique_ptr<CInputStream> data_stream(new CCompressedStream(std::unique_ptr<CFileInputStream>(new CFileInputStream(filename.toLocal8Bit().data())), true));
-
-	CMapLoaderH3M map_loader(data_stream.get());
-
-	m_singleton->map = map_loader.loadMap();
-
-	Q_EMIT mapLoadComplete();
-
-	return static_cast<bool>(m_singleton->map);
-}
