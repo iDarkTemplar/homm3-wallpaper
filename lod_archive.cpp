@@ -8,8 +8,10 @@
 
 #include "lod_archive.h"
 
+#include <ctype.h>
 #include <string.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 std::vector<LodEntry> read_lod_archive_header(CBinaryReader &reader)
@@ -44,6 +46,9 @@ std::vector<LodEntry> read_lod_archive_header(CBinaryReader &reader)
 		entry.full_size       = reader.readUInt32();
 		entry.filetype        = static_cast<DefType>(reader.readUInt32());
 		entry.compressed_size = reader.readUInt32();
+
+		// lowercase name
+		std::transform(entry.name.begin(), entry.name.end(), entry.name.begin(), [](unsigned char c) { return tolower(c); });
 
 		result.push_back(entry);
 	}

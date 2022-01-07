@@ -12,8 +12,10 @@
 #include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"
 
+#include <ctype.h>
 #include <string.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace {
@@ -285,6 +287,16 @@ Def read_def_file(const std::string &lod_filename, const LodEntry &lod_entry)
 	case DefType::terrain:
 		memset(result.rawPalette.data(), 0, 3 * 5);
 		break;
+	}
+
+	// lowercase all frame names
+	for (auto group_iter = result.groups.begin(); group_iter != result.groups.end(); ++group_iter)
+	{
+		for (auto frame_iter = group_iter->frames.begin(); frame_iter != group_iter->frames.end(); ++frame_iter)
+		{
+			// lowercase name
+			std::transform(frame_iter->frameName.begin(), frame_iter->frameName.end(), frame_iter->frameName.begin(), [](unsigned char c) { return tolower(c); });
+		}
 	}
 
 	return result;
