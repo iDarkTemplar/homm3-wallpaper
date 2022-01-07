@@ -260,8 +260,6 @@ void Homm3MapRenderer::initialize()
 	glUniform1i(m_shaderTexture, 0);
 
 	glGenTextures(1, &m_texture_id);
-
-	prepareRenderData();
 }
 
 void Homm3MapRenderer::render()
