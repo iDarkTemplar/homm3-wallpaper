@@ -1,0 +1,3 @@
+module homm3map
+plugin homm3mapplugin
+classname HOMM3MapPlugin

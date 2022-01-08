@@ -4,21 +4,22 @@ project(homm3-wallpaper
 	VERSION 0.1.0
 	LANGUAGES CXX)
 
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+
+set(QML_PLUGIN_NAME "homm3map")
 
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
 find_package(Qt5 COMPONENTS Core Gui Concurrent Quick REQUIRED)
 
-set (SOURCES
+set(LIBRARY_SOURCES
 	data_maps.cpp
 	def_file.cpp
 	homm3_image_provider.cpp
 	homm3map.cpp
 	homm3singleton.cpp
 	lod_archive.cpp
-	main.cpp
 	random.cpp
 	texture_atlas.cpp
 	vcmi/CBinaryReader.cpp
@@ -29,7 +30,7 @@ set (SOURCES
 	vcmi/ObjectTemplate.cpp
 	)
 
-set(HEADERS
+set(LIBRARY_HEADERS
 	data_maps.h
 	def_file.h
 	globals.h
@@ -55,18 +56,51 @@ set(HEADERS
 	vcmi/int3.h
 	)
 
-set(RESOURCES
+set(APP_SOURCES
+	main.cpp
+	)
+
+set(APP_RESOURCES
 	qml.qrc
 )
 
-qt_add_resources(COMPILED_RESOURCES ${RESOURCES})
-qt_wrap_cpp(MOC_HEADERS ${HEADERS})
+set(PLUGIN_SOURCES
+	plugin.cpp
+	)
+
+set(PLUGIN_HEADERS
+	plugin.h
+	)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
-add_executable(homm3-wallpaper ${SOURCES} ${HEADERS} ${MOC_HEADERS} ${COMPILED_RESOURCES})
-target_link_libraries(homm3-wallpaper ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Concurrent Qt5::Quick)
+qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
+qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
+qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
+
+add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
+target_link_libraries(homm3map ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Concurrent Qt5::Quick)
+
+add_executable(homm3map-viewer ${APP_SOURCES} ${COMPILED_APP_RESOURCES})
+target_link_libraries(homm3map-viewer homm3map Qt5::Gui Qt5::Quick)
+
+add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})
+target_link_libraries(homm3mapplugin homm3map Qt5::Quick)
+
+set_target_properties(homm3mapplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME})
+add_custom_target(copy_qmldir
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/qmldir ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME}/qmldir
+	SOURCES qmldir
+	DEPENDS qmldir)
+
+add_dependencies(homm3mapplugin copy_qmldir)
+
+get_target_property(QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 include(GNUInstallDirs)
 
-install(TARGETS homm3-wallpaper RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS homm3map-viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
+install(FILES qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})

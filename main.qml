@@ -8,7 +8,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import homm3map 1.0
+import homm3mapprivate 1.0
 
 ApplicationWindow {
 	id: window

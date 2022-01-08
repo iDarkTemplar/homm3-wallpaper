@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 
 		QGuiApplication app(argc, argv);
 
-		qmlRegisterType<Homm3Map>("homm3map", 1, 0, "Homm3Map");
+		qmlRegisterType<Homm3Map>("homm3mapprivate", 1, 0, "Homm3Map");
 
 		QQmlApplicationEngine engine;
 
