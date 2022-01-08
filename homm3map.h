@@ -44,8 +44,8 @@ struct MapData
 	std::shared_ptr<CMap> m_map;
 	int m_level = 0;
 
-	QVector<QVector3D> m_vertices;
-	QVector<QVector2D> m_texcoords;
+	std::vector<QVector3D> m_vertices;
+	std::vector<QVector2D> m_texcoords;
 
 	TextureAtlas m_texture_atlas;
 
@@ -53,7 +53,7 @@ struct MapData
 
 	std::map<AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
 
-	QVector<uint8_t> m_texture_data;
+	std::vector<uint8_t> m_texture_data;
 };
 
 class Homm3Map: public QQuickFramebufferObject
@@ -84,8 +84,8 @@ private:
 	std::shared_ptr<CMap> m_map;
 	int m_map_level;
 
-	QVector<QVector3D> m_vertices;
-	QVector<QVector2D> m_texcoords;
+	std::vector<QVector3D> m_vertices;
+	std::vector<QVector2D> m_texcoords;
 
 	TextureAtlas m_texture_atlas;
 
@@ -93,7 +93,7 @@ private:
 
 	std::map<AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
 
-	QVector<uint8_t> m_texture_data;
+	std::vector<uint8_t> m_texture_data;
 
 	friend class Homm3MapRenderer;
 };
@@ -130,8 +130,8 @@ private:
 
 	std::shared_ptr<CMap> m_map;
 
-	QVector<QVector3D> m_vertices;
-	QVector<QVector2D> m_texcoords;
+	std::vector<QVector3D> m_vertices;
+	std::vector<QVector2D> m_texcoords;
 
 	TextureAtlas m_texture_atlas;
 
@@ -139,7 +139,7 @@ private:
 
 	std::map<AnimatedItem, std::map<int, std::set<size_t> > > m_animated_items;
 
-	QVector<uint8_t> m_texture_data;
+	std::vector<uint8_t> m_texture_data;
 
 	QTimer m_frame_timer;
 	bool m_need_update_animation;

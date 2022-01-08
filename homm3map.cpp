@@ -270,6 +270,8 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 		}
 	};
 
+	size_t total_squares = 4 + 2 * getMapWidth(result.m_map) + 2 * getMapHeight(result.m_map);
+
 	// load edges
 	{
 		Def def_file = load_def_file_func("edg.def", -1);
@@ -295,6 +297,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 			{
 				auto tile_info = getTerrainTile(result.m_map, tile_x, tile_y, result.m_level);
 
+				++total_squares;
 				Def def_file = load_def_file_func(std::get<0>(tile_info), -1);
 
 				if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(tile_info)))
@@ -316,6 +319,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				auto river_info = getRiverTile(result.m_map, tile_x, tile_y, result.m_level);
 				if (!std::get<0>(river_info).empty())
 				{
+					++total_squares;
 					def_file = load_def_file_func(std::get<0>(river_info), -1);
 
 					if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(river_info)))
@@ -338,6 +342,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				auto road_info = getRoadTile(result.m_map, tile_x, tile_y, result.m_level);
 				if (!std::get<0>(road_info).empty())
 				{
+					++total_squares;
 					def_file = load_def_file_func(std::get<0>(road_info), -1);
 
 					if ((def_file.type != DefType::unknown) && (def_file.groups.size() > 0) && (def_file.groups[0].frames.size() > std::get<1>(road_info)))
@@ -386,6 +391,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				item.special = static_cast<int>((*iter)->tempOwner);
 			}
 
+			++total_squares;
 			Def def_file = load_def_file_func(item.name, item.special);
 
 			if ((def_file.type != DefType::unknown) && (def_file.groups.size() > item.group) && (def_file.groups[item.group].frames.size() > 0))
@@ -405,6 +411,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				MapItem flag_item { hero_flags_map[index].first };
 				flag_item.group = hero_flags_map[index].second;
 
+				++total_squares;
 				def_file = load_def_file_func(flag_item.name, flag_item.special);
 
 				if ((def_file.type != DefType::unknown) && (def_file.groups.size() > flag_item.group) && (def_file.groups[flag_item.group].frames.size() > 0))
@@ -473,6 +480,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 						}
 
 						// insert flag before hero
+						total_squares += 2;
 						map_objects[hero_pos].push_back(flag_item);
 						map_objects[hero_pos].push_back(hero_item);
 					}
@@ -485,8 +493,7 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 	const auto atlas_size = result.m_texture_atlas.getSize();
 
 	{
-		result.m_texture_data.resize(atlas_size * atlas_size * 4);
-		result.m_texture_data.fill(0);
+		result.m_texture_data.resize(atlas_size * atlas_size * 4, 0);
 
 		static const uint8_t transparency_palette[] = { 0x00, 0x40, 0x00, 0x00, 0x80, 0xff, 0x80, 0x40 };
 
@@ -603,6 +610,9 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 	// now add vertices with texture coordinates
 	QRect tex_rect;
 
+	result.m_vertices.reserve(total_squares * 6);
+	result.m_texcoords.reserve(total_squares * 6);
+
 	if (result.m_map)
 	{
 		// draw terrain, rivers
@@ -631,20 +641,20 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 					}
 				}
 
-				result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
-				result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-				result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-				result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-				result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-				result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+				result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0));
+				result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0));
+				result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0));
+				result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0));
+				result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0));
+				result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0));
 
 				tex_rect = result.m_texture_atlas.findItem(TextureItem(std::get<0>(tile_info), 0, std::get<1>(tile_info), special_terrain_index));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(tile_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(tile_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
 
 				auto river_info = getRiverTile(result.m_map, tile_x, tile_y, result.m_level);
 				if (!std::get<0>(river_info).empty())
@@ -668,20 +678,20 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 						}
 					}
 
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0);
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0);
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size, 0));
 
 					tex_rect = result.m_texture_atlas.findItem(TextureItem(std::get<0>(river_info), 0, std::get<1>(river_info), special_river_index));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(river_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(river_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
 				}
 			}
 		}
@@ -694,20 +704,20 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 				auto road_info = getRoadTile(result.m_map, tile_x, tile_y, result.m_level);
 				if (!std::get<0>(road_info).empty())
 				{
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0);
-					result.m_vertices << QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
-					result.m_vertices << QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0);
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 1) * tile_size + tile_size / 2, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 1) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0));
+					result.m_vertices.push_back(QVector3D((tile_x + 2) * tile_size, (tile_y + 2) * tile_size + tile_size / 2, 0));
 
 					tex_rect = result.m_texture_atlas.findItem(TextureItem(std::get<0>(road_info), 0, std::get<1>(road_info), -1));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
-					result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 0) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 0) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
+					result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + ((std::get<2>(road_info) % 2 == 1) ? 0 : tex_rect.width())) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + ((std::get<2>(road_info) / 2 == 1) ? 0 : tex_rect.height())) / static_cast<float>(atlas_size)));
 				}
 			}
 		}
@@ -736,86 +746,86 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 
 				tex_rect = result.m_texture_atlas.findItem(TextureItem(object_iter->name, object_iter->group, frame, object_iter->special));
 
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0);
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0);
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0);
-				result.m_vertices << QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size,                     0);
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0));
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0));
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0));
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size - tex_rect.height(), 0));
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size - tex_rect.width(), (pos_iter->first.y + 2) * tile_size,                     0));
+				result.m_vertices.push_back(QVector3D((pos_iter->first.x + 2) * tile_size,                    (pos_iter->first.y + 2) * tile_size,                     0));
 
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-				result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+				result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 			}
 		}
 	}
 
 	// top left edge
-	result.m_vertices << QVector3D(0, 0, 0);
-	result.m_vertices << QVector3D(tile_size, 0, 0);
-	result.m_vertices << QVector3D(0, tile_size, 0);
-	result.m_vertices << QVector3D(tile_size, 0, 0);
-	result.m_vertices << QVector3D(0, tile_size, 0);
-	result.m_vertices << QVector3D(tile_size, tile_size, 0);
+	result.m_vertices.push_back(QVector3D(0, 0, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, 0, 0));
+	result.m_vertices.push_back(QVector3D(0, tile_size, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, 0, 0));
+	result.m_vertices.push_back(QVector3D(0, tile_size, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, tile_size, 0));
 
 	tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, 16, -1));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 
 	// top right edge
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, 0, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, 0, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, 0, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, tile_size, 0);
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, 0, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, 0, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, 0, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, tile_size, 0));
 
 	tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, 17, -1));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 
 	// bottom right edge
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-	result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
 
 	tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, 18, -1));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 
 	// bottom left edge
-	result.m_vertices << QVector3D(0, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D(tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D(0, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-	result.m_vertices << QVector3D(tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-	result.m_vertices << QVector3D(0, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-	result.m_vertices << QVector3D(tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
+	result.m_vertices.push_back(QVector3D(0, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D(0, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D(0, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+	result.m_vertices.push_back(QVector3D(tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
 
 	tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, 19, -1));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-	result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+	result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 
 	// randomize edges
 	top_edge.resize(getMapWidth(result.m_map));
@@ -846,77 +856,77 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 	// top edge
 	for (auto i = 0; i < getMapWidth(result.m_map); ++i)
 	{
-		result.m_vertices << QVector3D((i + 1) * tile_size, 0, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, 0, 0);
-		result.m_vertices << QVector3D((i + 1) * tile_size, tile_size, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, 0, 0);
-		result.m_vertices << QVector3D((i + 1) * tile_size, tile_size, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, tile_size, 0);
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, 0, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, 0, 0));
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, 0, 0));
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, tile_size, 0));
 
 		tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, top_edge[i], -1));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 	}
 
 	// right edge
 	for (auto i = 0; i < getMapHeight(result.m_map); ++i)
 	{
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 2) * tile_size, 0);
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 2) * tile_size, 0);
-		result.m_vertices << QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 2) * tile_size, 0);
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 1) * tile_size, (i + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((getMapWidth(result.m_map) + 2) * tile_size, (i + 2) * tile_size, 0));
 
 		tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, right_edge[i], -1));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 	}
 
 	// bottom edge
 	for (auto i = 0; i < getMapWidth(result.m_map); ++i)
 	{
-		result.m_vertices << QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0);
-		result.m_vertices << QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
-		result.m_vertices << QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0);
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 1) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D((i + 2) * tile_size, (getMapHeight(result.m_map) + 2) * tile_size, 0));
 
 		tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, bottom_edge[i], -1));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 	}
 
 	// left edge
 	for (auto i = 0; i < getMapHeight(result.m_map); ++i)
 	{
-		result.m_vertices << QVector3D(0, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D(tile_size, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D(0, (i + 2) * tile_size, 0);
-		result.m_vertices << QVector3D(tile_size, (i + 1) * tile_size, 0);
-		result.m_vertices << QVector3D(0, (i + 2) * tile_size, 0);
-		result.m_vertices << QVector3D(tile_size, (i + 2) * tile_size, 0);
+		result.m_vertices.push_back(QVector3D(0, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D(tile_size, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D(0, (i + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D(tile_size, (i + 1) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D(0, (i + 2) * tile_size, 0));
+		result.m_vertices.push_back(QVector3D(tile_size, (i + 2) * tile_size, 0));
 
 		tex_rect = result.m_texture_atlas.findItem(TextureItem("edg.def", 0, left_edge[i], -1));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
-		result.m_texcoords << QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y())                     / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x())                    / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
+		result.m_texcoords.push_back(QVector2D(static_cast<float>(tex_rect.x() + tex_rect.width()) / static_cast<float>(atlas_size), static_cast<float>(tex_rect.y() + tex_rect.height()) / static_cast<float>(atlas_size)));
 	}
 
 	return result;
@@ -1025,8 +1035,8 @@ void Homm3MapRenderer::render()
 	m_program.enableAttributeArray(m_vertexAttr);
 	m_program.enableAttributeArray(m_textureAttr);
 
-	m_program.setAttributeArray(m_vertexAttr, m_vertices.constData());
-	m_program.setAttributeArray(m_textureAttr, m_texcoords.constData());
+	m_program.setAttributeArray(m_vertexAttr, m_vertices.data());
+	m_program.setAttributeArray(m_textureAttr, m_texcoords.data());
 	glBindTexture(GL_TEXTURE_2D, m_texture_id);
 
 	glEnable(GL_BLEND);
@@ -1051,7 +1061,7 @@ void Homm3MapRenderer::prepareRenderData()
 	if (m_need_update_map && !m_texture_data.empty())
 	{
 		glBindTexture(GL_TEXTURE_2D, m_texture_id);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texture_atlas.getSize(), m_texture_atlas.getSize(), 0,  GL_RGBA, GL_UNSIGNED_BYTE, m_texture_data.constData());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texture_atlas.getSize(), m_texture_atlas.getSize(), 0,  GL_RGBA, GL_UNSIGNED_BYTE, m_texture_data.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glFinish();
@@ -1195,7 +1205,7 @@ void Homm3Map::mapLoaded()
 
 		auto result = m_future.result();
 
-		if (result.m_vertices.isEmpty() || result.m_texcoords.isEmpty() || result.m_texture_data.isEmpty())
+		if (result.m_vertices.empty() || result.m_texcoords.empty() || result.m_texture_data.empty())
 		{
 			return;
 		}
