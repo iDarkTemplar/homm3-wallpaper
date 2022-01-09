@@ -1175,14 +1175,14 @@ QQuickFramebufferObject::Renderer* Homm3Map::createRenderer() const
 	return new Homm3MapRenderer();
 }
 
-void Homm3Map::loadMap(const QString &filename)
+void Homm3Map::loadMap(const QString &filename, int level)
 {
 	if (m_future.isRunning())
 	{
 		return;
 	}
 
-	m_future = QtConcurrent::run(&loadMapData, filename, std::shared_ptr<CMap>(), 0);
+	m_future = QtConcurrent::run(&loadMapData, filename, std::shared_ptr<CMap>(), level);
 	m_future_watcher.setFuture(m_future);
 }
 

@@ -69,7 +69,7 @@ public:
 
 	virtual QQuickFramebufferObject::Renderer* createRenderer() const override;
 
-	Q_INVOKABLE void loadMap(const QString &filename);
+	Q_INVOKABLE void loadMap(const QString &filename, int level);
 	Q_INVOKABLE void toggleLevel();
 	Q_INVOKABLE void setDataArchives(const QStringList &files);
 

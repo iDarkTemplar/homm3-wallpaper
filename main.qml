@@ -51,7 +51,7 @@ ApplicationWindow {
 	Component.onCompleted: {
 		if (typeof map_name !== "undefined" && map_name != "")
 		{
-			map.loadMap(map_name);
+			map.loadMap(map_name, 0);
 		}
 	}
 }
