@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd" >
+  <kcfgfile name=""/>
+
+  <group name="General">
+    <entry name="DataArchives" type="StringList">
+      <label>Path of HOMM3 data archives, usually H3sprite.lod and H3ab_spr.lod</label>
+      <default></default>
+    </entry>
+    <entry name="MapList" type="StringList">
+      <label>List of HOMM3 maps files</label>
+      <default></default>
+    </entry>
+    <entry name="RefreshTime" type="int">
+      <label>Time between changing maps</label>
+      <default>900</default>
+    </entry>
+    <entry name="DisplayedMapLevel" type="int">
+      <label>Displayed map level</label>
+      <default>-1</default>
+    </entry>
+    <entry name="RandomInitialPosition" type="bool">
+      <label>If true, random position on map is chosen</label>
+      <default>true</default>
+    </entry>
+    <entry name="InitialPositionX" type="int">
+      <label>X coordinate of initial displayed position, -1 for left border</label>
+      <default>-1</default>
+    </entry>
+    <entry name="InitialPositionY" type="int">
+      <label>Y coordinate of initial displayed position, -1 for top border</label>
+      <default>-1</default>
+    </entry>
+    <entry name="Scale" type="double">
+      <label>Map image scaling factor</label>
+      <default>1.0</default>
+    </entry>
+  </group>
+</kcfg>

@@ -1,0 +1,17 @@
+[Desktop Entry]
+Encoding=UTF-8
+Icon=preferences-desktop-wallpaper
+Name=HOMM 3 Map Wallpaper
+
+Type=Service
+X-KDE-ServiceTypes=Plasma/Wallpaper
+X-KDE-PluginInfo-Author=i.Dark_Templar
+X-KDE-PluginInfo-Category=
+X-KDE-PluginInfo-Email=darktemplar@dark-templar-archives.net
+X-KDE-PluginInfo-License=GPLv3+
+X-KDE-PluginInfo-Name=homm3mapwallpaper
+X-KDE-PluginInfo-EnabledByDefault=true
+X-KDE-PluginInfo-Version=
+X-KDE-PluginInfo-Website=https://github.com/iDarkTemplar/homm3-wallpaper/
+
+X-Plasma-MainScript=ui/main.qml

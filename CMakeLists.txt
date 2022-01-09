@@ -13,6 +13,11 @@ find_package(ZLIB REQUIRED)
 
 find_package(Qt5 COMPONENTS Core Gui Concurrent Quick REQUIRED)
 
+find_package(ECM 1.0.0 REQUIRED NO_MODULE)
+set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+
+find_package(KF5 COMPONENTS Plasma REQUIRED)
+
 option(VIEWER "Build HOMM3 map viewer application" true)
 
 set(LIBRARY_SOURCES
@@ -100,6 +105,14 @@ add_custom_target(copy_qmldir
 
 add_dependencies(homm3mapplugin copy_qmldir)
 
+add_custom_target(wallpaper
+	SOURCES
+	wallpaper/contents/config/main.xml
+	wallpaper/contents/ui/config.qml
+	wallpaper/contents/ui/main.qml
+	wallpaper/metadata.desktop
+	)
+
 get_target_property(QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
 execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -111,3 +124,5 @@ endif (VIEWER)
 
 install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
 install(FILES qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
+
+plasma_install_package(wallpaper homm3mapwallpaper wallpapers wallpaper)

@@ -11,7 +11,6 @@ import QtQuick.Controls 2.15
 import homm3mapprivate 1.0
 
 ApplicationWindow {
-	id: window
 	width: 640
 	height: 480
 	visible: true
@@ -32,8 +31,6 @@ ApplicationWindow {
 		}
 
 		Flickable {
-			id: root
-
 			anchors.fill: parent
 			leftMargin: contentWidth >= width ? 0 : (width - contentWidth) / 2
 			topMargin: contentHeight >= height ? 0 : (height - contentHeight) / 2
