@@ -21,6 +21,7 @@
 #include <utility>
 
 #include <QtCore/QMutexLocker>
+#include <QtCore/QUrl>
 #include <QtConcurrent/QtConcurrent>
 #include <QtGui/QOpenGLFramebufferObjectFormat>
 #include <QtGui/QVector2D>
@@ -241,11 +242,22 @@ MapData loadMapData(const QString &map_name, const std::shared_ptr<CMap> &map, i
 	}
 	else
 	{
-		std::unique_ptr<CInputStream> data_stream(new CCompressedStream(std::unique_ptr<CFileInputStream>(new CFileInputStream(map_name.toLocal8Bit().data())), true));
+		try
+		{
+			QUrl map_url(map_name);
+			map_url.setScheme(QLatin1String("file"));
 
-		CMapLoaderH3M map_loader(data_stream.get());
+			std::unique_ptr<CInputStream> data_stream(new CCompressedStream(std::unique_ptr<CFileInputStream>(new CFileInputStream(map_url.toLocalFile().toLocal8Bit().data())), true));
 
-		result.m_map = map_loader.loadMap();
+			CMapLoaderH3M map_loader(data_stream.get());
+
+			result.m_map = map_loader.loadMap();
+		}
+		catch (...)
+		{
+			// ignore
+			result.m_map.reset();
+		}
 	}
 
 	result.m_level = std::min(std::max(level, 0), getMapLevels(result.m_map) - 1);
@@ -1210,14 +1222,24 @@ void Homm3Map::setDataArchives(const QStringList &files)
 
 	for (const auto &file: files)
 	{
-		std::string filename = file.toLocal8Bit().data();
-		CFileInputStream file_stream{std::filesystem::path(filename)};
-		CBinaryReader reader(&file_stream);
-		std::vector<LodEntry> parsed_lod_entries = read_lod_archive_header(reader);
-
-		for (auto iter = parsed_lod_entries.begin(); iter != parsed_lod_entries.end(); ++iter)
+		try
 		{
-			lod_entries[iter->name] = std::tie(filename, *iter);
+			QUrl file_url(file);
+			file_url.setScheme(QLatin1String("file"));
+
+			std::string filename = file_url.toLocalFile().toLocal8Bit().data();
+			CFileInputStream file_stream{std::filesystem::path(filename)};
+			CBinaryReader reader(&file_stream);
+			std::vector<LodEntry> parsed_lod_entries = read_lod_archive_header(reader);
+
+			for (auto iter = parsed_lod_entries.begin(); iter != parsed_lod_entries.end(); ++iter)
+			{
+				lod_entries[iter->name] = std::tie(filename, *iter);
+			}
+		}
+		catch (...)
+		{
+			// ignore
 		}
 	}
 
