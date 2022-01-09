@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 
 			for (int i = 2; i < argc; ++i)
 			{
-				CFileInputStream file_stream(std::filesystem::path(argv[i]));
+				CFileInputStream file_stream{std::filesystem::path(argv[i])};
 				CBinaryReader reader(&file_stream);
 				std::vector<LodEntry> files = read_lod_archive_header(reader);
 

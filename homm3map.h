@@ -16,6 +16,7 @@
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
 #include <QtCore/QTimer>
 #include <QtGui/QOpenGLFunctions>
 #include <QtGui/QOpenGLShaderProgram>
@@ -70,6 +71,7 @@ public:
 
 	Q_INVOKABLE void loadMap(const QString &filename);
 	Q_INVOKABLE void toggleLevel();
+	Q_INVOKABLE void setDataArchives(const QStringList &files);
 
 	double scale() const;
 	void setScale(double value);
