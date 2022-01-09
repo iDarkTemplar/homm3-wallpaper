@@ -11,7 +11,9 @@
 #include <ctype.h>
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
+#include <limits>
 #include <map>
 #include <sstream>
 #include <tuple>
@@ -1154,6 +1156,7 @@ void Homm3MapRenderer::updateAnimatedItems()
 
 Homm3Map::Homm3Map(QQuickItem *parent)
 	: QQuickFramebufferObject(parent)
+	, m_scale(1.0)
 	, m_map_level(0)
 {
 	QObject::connect(&m_future_watcher, &QFutureWatcher<MapData>::finished, this, &Homm3Map::mapLoaded);
@@ -1198,6 +1201,33 @@ void Homm3Map::toggleLevel()
 	m_future_watcher.setFuture(m_future);
 }
 
+double Homm3Map::scale() const
+{
+	return m_scale;
+}
+
+void Homm3Map::setScale(double value)
+{
+	// if m_scale == value, return
+	if (std::nextafter(m_scale, std::numeric_limits<double>::lowest()) <= value
+		&& std::nextafter(m_scale, std::numeric_limits<double>::max()) >= value)
+	{
+		return;
+	}
+
+	QMutexLocker guard(&m_data_mutex);
+
+	m_scale = value;
+
+	Q_EMIT scaleUpdated(m_scale);
+
+	if (m_map)
+	{
+		setWidth((getMapWidth(m_map) + 2) * tile_size * m_scale);
+		setHeight((getMapHeight(m_map) + 2) * tile_size * m_scale);
+	}
+}
+
 void Homm3Map::mapLoaded()
 {
 	{
@@ -1224,8 +1254,8 @@ void Homm3Map::mapLoaded()
 
 		m_texture_data = std::move(result.m_texture_data);
 
-		setWidth((getMapWidth(m_map) + 2) * tile_size);
-		setHeight((getMapHeight(m_map) + 2) * tile_size);
+		setWidth((getMapWidth(m_map) + 2) * tile_size * m_scale);
+		setHeight((getMapHeight(m_map) + 2) * tile_size * m_scale);
 	}
 
 	update();

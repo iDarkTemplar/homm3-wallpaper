@@ -60,6 +60,8 @@ class Homm3Map: public QQuickFramebufferObject
 {
 	Q_OBJECT
 
+	Q_PROPERTY(double scale READ scale WRITE setScale NOTIFY scaleUpdated);
+
 public:
 	explicit Homm3Map(QQuickItem *parent = nullptr);
 	~Homm3Map();
@@ -69,8 +71,12 @@ public:
 	Q_INVOKABLE void loadMap(const QString &filename);
 	Q_INVOKABLE void toggleLevel();
 
+	double scale() const;
+	void setScale(double value);
+
 Q_SIGNALS:
 	void loadingFinished();
+	void scaleUpdated(double);
 
 private Q_SLOTS:
 	void mapLoaded();
@@ -78,6 +84,8 @@ private Q_SLOTS:
 private:
 	QFuture<MapData> m_future;
 	QFutureWatcher<MapData> m_future_watcher;
+
+	double m_scale;
 
 	QMutex m_data_mutex;
 
