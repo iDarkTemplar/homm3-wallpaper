@@ -161,7 +161,14 @@ void CMapLoaderH3M::init()
 			}
 			else
 			{
-				(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7);
+				if (((*iter)->tempOwner == PlayerColor::NEUTRAL) || (map->players[static_cast<int>((*iter)->tempOwner)].playerFaction == ETownType::ANY))
+				{
+					(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7);
+				}
+				else
+				{
+					(*iter)->subID = static_cast<int>(map->players[static_cast<int>((*iter)->tempOwner)].playerFaction);
+				}
 			}
 
 			(*iter)->appearance.animationFile = towns_map.at(static_cast<ETownType>((*iter)->subID)).at(static_cast<int>((*iter)->town_type));
@@ -369,11 +376,20 @@ void CMapLoaderH3M::init()
 				}
 				else
 				{
-					(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, (mapHeader->version != EMapFormat::ROE ? 9 : 8) * 2 - 1);
+					if (((*iter)->tempOwner == PlayerColor::NEUTRAL) || (map->players[static_cast<int>((*iter)->tempOwner)].playerFaction == ETownType::ANY))
+					{
+						(*iter)->subID = CRandomGenerator::instance().nextInt<int32_t>(0, (mapHeader->version != EMapFormat::ROE ? 9 : 8) * 2 - 1);
 
-					std::stringstream ss;
-					ss << "ah" << std::setfill('0') << std::setw(2) << (*iter)->subID << "_e.def";
-					(*iter)->appearance.animationFile = ss.str();
+						std::stringstream ss;
+						ss << "ah" << std::setfill('0') << std::setw(2) << (*iter)->subID << "_e.def";
+						(*iter)->appearance.animationFile = ss.str();
+					}
+					else
+					{
+						const auto &hero_types = hero_by_town_map.at(map->players[static_cast<int>((*iter)->tempOwner)].playerFaction);
+
+						(*iter)->appearance.animationFile = hero_types[CRandomGenerator::instance().nextInt<int32_t>(0, hero_types.size() - 1)];
+					}
 				}
 			}
 			break;

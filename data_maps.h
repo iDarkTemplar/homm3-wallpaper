@@ -27,6 +27,7 @@ extern const std::vector<std::vector<std::string> > monsters_map;
 extern const std::map<ETownType, std::vector<std::string> > towns_map;
 
 extern const std::vector<std::string> hero_subtype_appearance_map;
+extern const std::map<ETownType, std::vector<std::string> > hero_by_town_map;
 
 extern const std::vector<std::string> resources_map;
 

@@ -697,6 +697,73 @@ const std::vector<std::string> hero_subtype_appearance_map =
 	"ah06_e.def", // 155, xeron, demoniac
 };
 
+const std::map<ETownType, std::vector<std::string> > hero_by_town_map =
+{
+	{
+		ETownType::CASTLE,
+		{
+			"ah00_e.def",
+			"ah01_e.def",
+		}
+	},
+	{
+		ETownType::RAMPART,
+		{
+			"ah02_e.def",
+			"ah03_e.def",
+		}
+	},
+	{
+		ETownType::TOWER,
+		{
+			"ah04_e.def",
+			"ah05_e.def",
+		}
+	},
+	{
+		ETownType::INFERNO,
+		{
+			"ah06_e.def",
+			"ah07_e.def",
+		}
+	},
+	{
+		ETownType::NECROPOLIS,
+		{
+			"ah08_e.def",
+			"ah09_e.def",
+		}
+	},
+	{
+		ETownType::DUNGEON,
+		{
+			"ah10_e.def",
+			"ah11_e.def",
+		}
+	},
+	{
+		ETownType::STRONGHOLD,
+		{
+			"ah12_e.def",
+			"ah13_e.def",
+		}
+	},
+	{
+		ETownType::FORTRESS,
+		{
+			"ah14_e.def",
+			"ah15_e.def",
+		}
+	},
+	{
+		ETownType::CONFLUX,
+		{
+			"ah16_e.def",
+			"ah17_e.def",
+		}
+	},
+};
+
 const std::vector<std::string> resources_map =
 {
 	"avtcrys0.def", // crystals
