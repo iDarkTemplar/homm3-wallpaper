@@ -73,7 +73,7 @@ ColumnLayout {
 		twinFormLayouts: parentLayout
 
 		RowLayout {
-			Kirigami.FormData.label: i18nd("homm3mapwallpaper", "HOMM3 data archives:")
+			Kirigami.FormData.label: i18nd("homm3mapwallpaper", "HOMM3 data archives (usually H3sprite.lod and H3ab_spr.lod):")
 
 			Rectangle {
 				color: syspal.base
