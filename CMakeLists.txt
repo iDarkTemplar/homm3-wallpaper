@@ -13,6 +13,8 @@ find_package(ZLIB REQUIRED)
 
 find_package(Qt5 COMPONENTS Core Gui Concurrent Quick REQUIRED)
 
+option(VIEWER "Build HOMM3 map viewer application" true)
+
 set(LIBRARY_SOURCES
 	data_maps.cpp
 	def_file.cpp
@@ -74,15 +76,18 @@ set(PLUGIN_HEADERS
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
-qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
 qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
 qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
 
 add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
 target_link_libraries(homm3map ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Concurrent Qt5::Quick)
 
-add_executable(homm3map-viewer ${APP_SOURCES} ${COMPILED_APP_RESOURCES})
-target_link_libraries(homm3map-viewer homm3map Qt5::Gui Qt5::Quick)
+if (VIEWER)
+	qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
+
+	add_executable(homm3map-viewer ${APP_SOURCES} ${COMPILED_APP_RESOURCES})
+	target_link_libraries(homm3map-viewer homm3map Qt5::Gui Qt5::Quick)
+endif (VIEWER)
 
 add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})
 target_link_libraries(homm3mapplugin homm3map Qt5::Quick)
@@ -100,7 +105,9 @@ execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARI
 
 include(GNUInstallDirs)
 
-install(TARGETS homm3map-viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (VIEWER)
+	install(TARGETS homm3map-viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif (VIEWER)
 
 install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
 install(FILES qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
