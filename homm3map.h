@@ -72,6 +72,7 @@ public:
 	Q_INVOKABLE void loadMap(const QString &filename, int level);
 	Q_INVOKABLE void toggleLevel();
 	Q_INVOKABLE void setDataArchives(const QStringList &files);
+	Q_INVOKABLE bool isMapLoaded() const;
 
 	double scale() const;
 	void setScale(double value);
@@ -89,7 +90,7 @@ private:
 
 	double m_scale;
 
-	QMutex m_data_mutex;
+	mutable QMutex m_data_mutex;
 
 	std::shared_ptr<CMap> m_map;
 	int m_map_level;

@@ -1246,6 +1246,13 @@ void Homm3Map::setDataArchives(const QStringList &files)
 	Homm3MapSingleton::getInstance()->lod_entries = std::move(lod_entries);
 }
 
+bool Homm3Map::isMapLoaded() const
+{
+	QMutexLocker guard(&m_data_mutex);
+
+	return static_cast<bool>(m_map);
+}
+
 double Homm3Map::scale() const
 {
 	return m_scale;
