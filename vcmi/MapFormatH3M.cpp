@@ -1784,7 +1784,7 @@ CGTownInstance* CMapLoaderH3M::readTown()
 		reader.skip(2); // first occurence
 		reader.skip(1); // next occurence
 		reader.skip(17);
-		reader.skip(9); // new buildings
+		reader.skip(6); // new buildings
 		reader.skip(7*2); // new creatures
 		reader.skip(4);
 	}
