@@ -14,9 +14,11 @@
 
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
+#include <QtCore/QMetaType>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
+#include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QtGui/QOpenGLFunctions>
 #include <QtGui/QOpenGLShaderProgram>
@@ -57,6 +59,20 @@ struct MapData
 	std::vector<uint8_t> m_texture_data;
 };
 
+class Homm3MapLoader: public QObject
+{
+	Q_OBJECT
+
+public:
+	explicit Homm3MapLoader(QObject *parent = nullptr);
+
+Q_SIGNALS:
+	void mapLoaded(std::shared_ptr<MapData> data);
+
+public Q_SLOTS:
+	void loadMapData(QString map_name, std::shared_ptr<CMap> map, int level);
+};
+
 class Homm3Map: public QQuickFramebufferObject
 {
 	Q_OBJECT
@@ -80,13 +96,13 @@ public:
 Q_SIGNALS:
 	void loadingFinished();
 	void scaleUpdated(double);
+	void startLoadingMap(QString map_name, std::shared_ptr<CMap> map, int level);
 
 private Q_SLOTS:
-	void mapLoaded();
+	void mapLoaded(std::shared_ptr<MapData> data);
 
 private:
-	QFuture<MapData> m_future;
-	QFutureWatcher<MapData> m_future_watcher;
+	QThread m_worker_thread;
 
 	double m_scale;
 
@@ -158,3 +174,6 @@ private:
 
 	void updateAnimatedItems();
 };
+
+Q_DECLARE_METATYPE(std::shared_ptr<MapData>);
+Q_DECLARE_METATYPE(std::shared_ptr<CMap>);

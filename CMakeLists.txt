@@ -11,7 +11,7 @@ set(QML_PLUGIN_NAME "homm3map")
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
-find_package(Qt5 COMPONENTS Core Gui Concurrent Quick REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Quick REQUIRED)
 
 find_package(ECM 1.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -85,7 +85,7 @@ qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
 qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
 
 add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
-target_link_libraries(homm3map ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Concurrent Qt5::Quick)
+target_link_libraries(homm3map ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Quick)
 
 if (VIEWER)
 	qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
