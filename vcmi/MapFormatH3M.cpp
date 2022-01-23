@@ -181,62 +181,76 @@ void CMapLoaderH3M::init()
 		ETownType selected_town;
 		int selected_level;
 
-		if (auto castleSpec = dynamic_cast<CCreGenAsCastleInfo *>((*iter)->info.get()))
+		if ((*iter)->ID == Obj::RANDOM_DWELLING_FACTION)
 		{
-			if (!castleSpec->asCastle)
+			selected_town = static_cast<ETownType>(std::min<int>(std::max<int>((*iter)->subID, 0), mapHeader->version != EMapFormat::ROE ? 8 : 7));
+		}
+		else
+		{
+			if (auto castleSpec = dynamic_cast<CCreGenAsCastleInfo *>((*iter)->info.get()))
 			{
-				std::vector<ETownType> allowedFactions;
-
-				for (int i = 0; i < castleSpec->allowedFactions.size(); ++i)
+				if (!castleSpec->asCastle)
 				{
-					if (castleSpec->allowedFactions[i])
+					std::vector<ETownType> allowedFactions;
+
+					for (int i = 0; i < castleSpec->allowedFactions.size(); ++i)
 					{
-						allowedFactions.push_back(static_cast<ETownType>(i));
+						if (castleSpec->allowedFactions[i])
+						{
+							allowedFactions.push_back(static_cast<ETownType>(i));
+						}
 					}
-				}
 
-				if (allowedFactions.empty())
-				{
-					for (int i = 0; i < GameConstants::F_NUMBER; ++i)
+					if (allowedFactions.empty())
 					{
-						allowedFactions.push_back(static_cast<ETownType>(i));
+						for (int i = 0; i < GameConstants::F_NUMBER; ++i)
+						{
+							allowedFactions.push_back(static_cast<ETownType>(i));
+						}
 					}
-				}
 
-				if (allowedFactions.size() > 1)
-				{
-					selected_town = allowedFactions[CRandomGenerator::instance().nextInt<size_t>(0, allowedFactions.size() - 1)];
+					if (allowedFactions.size() > 1)
+					{
+						selected_town = allowedFactions[CRandomGenerator::instance().nextInt<size_t>(0, allowedFactions.size() - 1)];
+					}
+					else
+					{
+						selected_town = allowedFactions[0];
+					}
 				}
 				else
 				{
-					selected_town = allowedFactions[0];
+					auto castle_iter = m_townByIdentifier.find(castleSpec->identifier);
+					if (castle_iter != m_townByIdentifier.end())
+					{
+						selected_town = static_cast<ETownType>(castle_iter->second->subID);
+					}
+					else
+					{
+						selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
+					}
 				}
 			}
 			else
 			{
-				auto castle_iter = m_townByIdentifier.find(castleSpec->identifier);
-				if (castle_iter != m_townByIdentifier.end())
-				{
-					selected_town = static_cast<ETownType>(castle_iter->second->subID);
-				}
-				else
-				{
-					selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
-				}
+				selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
 			}
 		}
-		else
-		{
-			selected_town = static_cast<ETownType>(CRandomGenerator::instance().nextInt<int32_t>(0, mapHeader->version != EMapFormat::ROE ? 8 : 7));
-		}
 
-		if (auto lvlSpec = dynamic_cast<CCreGenLeveledInfo *>((*iter)->info.get()))
+		if ((*iter)->ID == Obj::RANDOM_DWELLING_LVL)
 		{
-			selected_level = CRandomGenerator::instance().nextInt<int>(lvlSpec->minLevel, lvlSpec->maxLevel) - 1;
+			selected_level = std::min<int>(std::max<int>((*iter)->subID, 0), 6);
 		}
 		else
 		{
-			selected_level = CRandomGenerator::instance().nextInt<int>(0, 6);
+			if (auto lvlSpec = dynamic_cast<CCreGenLeveledInfo *>((*iter)->info.get()))
+			{
+				selected_level = CRandomGenerator::instance().nextInt<int>(lvlSpec->minLevel, lvlSpec->maxLevel) - 1;
+			}
+			else
+			{
+				selected_level = CRandomGenerator::instance().nextInt<int>(0, 6);
+			}
 		}
 
 		(*iter)->appearance.animationFile = dwellings_map.at(selected_town).at(selected_level);
