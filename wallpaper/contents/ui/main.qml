@@ -58,12 +58,9 @@ Item {
 	}
 
 	Image {
+		id: background
 		anchors.fill: parent
 		fillMode: Image.Tile
-		source: {
-			map.setDataArchives(data_archives);
-			return data_archives.length != 0 ? "image://homm3/edg.def" : "";
-		}
 
 		Flickable {
 			id: view
@@ -113,6 +110,9 @@ Item {
 	}
 
 	Component.onCompleted: {
+		map.setDataArchives(data_archives);
+		background.source = "image://homm3/edg.def";
+
 		map.loadMap(chooseRandomMap(), chooseMapLevel());
 
 		if (refresh_time > 0)
