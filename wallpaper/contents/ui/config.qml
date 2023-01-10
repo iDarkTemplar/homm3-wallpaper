@@ -85,9 +85,13 @@ ColumnLayout {
 					id: data_archives_view
 					implicitWidth: 800
 					implicitHeight: 100
+					clip: true
 					model: cfg_DataArchives
 					delegate: Text {
 						text: modelData
+					}
+					ScrollBar.vertical: ScrollBar {
+						active: true
 					}
 				}
 			}
@@ -122,9 +126,13 @@ ColumnLayout {
 					id: maps_view
 					implicitWidth: 800
 					implicitHeight: 200
+					clip: true
 					model: cfg_MapList
 					delegate: Text {
 						text: modelData
+					}
+					ScrollBar.vertical: ScrollBar {
+						active: true
 					}
 				}
 			}
