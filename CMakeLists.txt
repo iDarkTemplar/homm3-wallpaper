@@ -11,12 +11,8 @@ set(QML_PLUGIN_NAME "homm3map")
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
-find_package(Qt5 COMPONENTS Core Gui Quick REQUIRED)
-
-find_package(ECM 1.0.0 REQUIRED NO_MODULE)
-set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
-
-find_package(KF5 COMPONENTS Plasma REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui OpenGL Quick REQUIRED)
+find_package(Plasma 6.1.2 REQUIRED)
 
 option(VIEWER "Build HOMM3 map viewer application" true)
 
@@ -85,17 +81,17 @@ qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
 qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
 
 add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
-target_link_libraries(homm3map ZLIB::ZLIB Qt5::Core Qt5::Gui Qt5::Quick)
+target_link_libraries(homm3map ZLIB::ZLIB Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Quick)
 
 if (VIEWER)
 	qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
 
 	add_executable(homm3map-viewer ${APP_SOURCES} ${COMPILED_APP_RESOURCES})
-	target_link_libraries(homm3map-viewer homm3map Qt5::Gui Qt5::Quick)
+	target_link_libraries(homm3map-viewer homm3map Qt6::Gui Qt6::Quick)
 endif (VIEWER)
 
 add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})
-target_link_libraries(homm3mapplugin homm3map Qt5::Quick)
+target_link_libraries(homm3mapplugin homm3map Qt6::Quick)
 
 set_target_properties(homm3mapplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME})
 add_custom_target(copy_qmldir
@@ -113,7 +109,7 @@ add_custom_target(wallpaper
 	wallpaper/metadata.desktop
 	)
 
-get_target_property(QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
 execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 include(GNUInstallDirs)

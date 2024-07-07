@@ -1,6 +1,6 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
@@ -21,7 +21,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QtGui/QOpenGLFunctions>
-#include <QtGui/QOpenGLShaderProgram>
+#include <QtOpenGL/QOpenGLShaderProgram>
 #include <QtQuick/QQuickFramebufferObject>
 
 #include "vcmi/CMap.h"

@@ -1,6 +1,6 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
@@ -22,9 +22,9 @@
 
 #include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
-#include <QtGui/QOpenGLFramebufferObjectFormat>
 #include <QtGui/QVector2D>
 #include <QtGui/QVector3D>
+#include <QtOpenGL/QOpenGLFramebufferObjectFormat>
 
 #include "vcmi/CBinaryReader.h"
 #include "vcmi/CCompressedStream.h"
