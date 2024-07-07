@@ -1,17 +1,17 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
  */
 
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Dialogs 1.0
-import QtQuick.Layouts 1.0
-import org.kde.kcm 1.5 as KCM
-import org.kde.kirigami 2.12 as Kirigami
+import QtQuick 6.7
+import QtQuick.Controls 6.7
+import QtQuick.Dialogs 6.7
+import QtQuick.Layouts 6.7
+import org.kde.kcmutils as KCM
+import org.kde.kirigami as Kirigami
 
 ColumnLayout {
 	id: root
@@ -48,24 +48,22 @@ ColumnLayout {
 	FileDialog {
 		id: archive_dialog
 		visible: false
-		selectMultiple: true
+		fileMode: FileDialog.OpenFiles
 		title: i18nd("homm3mapwallpaper", "Please choose a file")
-		folder: shortcuts.home
 
 		onAccepted: {
-			cfg_DataArchives = cfg_DataArchives.concat(archive_dialog.fileUrls);
+			cfg_DataArchives = cfg_DataArchives.concat(selectedFiles);
 		}
 	}
 
 	FileDialog {
 		id: map_dialog
 		visible: false
-		selectMultiple: true
+		fileMode: FileDialog.OpenFiles
 		title: i18nd("homm3mapwallpaper", "Please choose a file")
-		folder: shortcuts.home
 
 		onAccepted: {
-			cfg_MapList = cfg_MapList.concat(map_dialog.fileUrls);
+			cfg_MapList = cfg_MapList.concat(selectedFiles);
 		}
 	}
 
@@ -243,7 +241,7 @@ ColumnLayout {
 					cfg_DisplayedMapLevel = model[currentIndex]["displayedLevel"];
 				}
 				Component.onCompleted: {
-					slideshowModeComboBox.currentIndex = cfg_DisplayedMapLevel + 1;
+					displayedMapLevelCombobox.currentIndex = cfg_DisplayedMapLevel + 1;
 				}
 
 				KCM.SettingHighlighter {

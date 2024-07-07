@@ -1,26 +1,27 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
  */
 
-import QtQuick 2.15
-import QtQuick.Controls 2.15
+import QtQuick
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
 import homm3map 1.0
 
-Item {
+WallpaperItem {
 	id: root
 
-	readonly property var data_archives: wallpaper.configuration.DataArchives
-	readonly property var map_list: wallpaper.configuration.MapList
-	readonly property int refresh_time: wallpaper.configuration.RefreshTime
-	readonly property int displayed_map_level: wallpaper.configuration.DisplayedMapLevel
-	readonly property bool random_initial_posiion: wallpaper.configuration.RandomInitialPosition
-	readonly property int initial_position_x: wallpaper.configuration.InitialPositionX
-	readonly property int initial_position_y: wallpaper.configuration.InitialPositionY
-	readonly property double scale: wallpaper.configuration.Scale
+	readonly property var data_archives: root.configuration.DataArchives
+	readonly property var map_list: root.configuration.MapList
+	readonly property int refresh_time: root.configuration.RefreshTime
+	readonly property int displayed_map_level: root.configuration.DisplayedMapLevel
+	readonly property bool random_initial_posiion: root.configuration.RandomInitialPosition
+	readonly property int initial_position_x: root.configuration.InitialPositionX
+	readonly property int initial_position_y: root.configuration.InitialPositionY
+	readonly property double scale: root.configuration.Scale
 
 	readonly property int tile_size: 32
 
