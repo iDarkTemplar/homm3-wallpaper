@@ -26,7 +26,6 @@
 #include <QtGui/QVector3D>
 #include <QtOpenGL/QOpenGLFramebufferObjectFormat>
 
-#include "vcmi/CBinaryReader.h"
 #include "vcmi/CCompressedStream.h"
 #include "vcmi/CFileInputStream.h"
 #include "vcmi/CGTownInstance.h"
@@ -34,7 +33,6 @@
 
 #include "data_maps.h"
 #include "def_file.h"
-#include "lod_archive.h"
 #include "homm3singleton.h"
 #include "random.h"
 
@@ -1218,32 +1216,7 @@ void Homm3Map::toggleLevel()
 
 void Homm3Map::setDataArchives(const QStringList &files)
 {
-	std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
-
-	for (const auto &file: files)
-	{
-		try
-		{
-			QUrl file_url(file);
-			file_url.setScheme(QLatin1String("file"));
-
-			std::string filename = file_url.toLocalFile().toLocal8Bit().data();
-			CFileInputStream file_stream{std::filesystem::path(filename)};
-			CBinaryReader reader(&file_stream);
-			std::vector<LodEntry> parsed_lod_entries = read_lod_archive_header(reader);
-
-			for (auto iter = parsed_lod_entries.begin(); iter != parsed_lod_entries.end(); ++iter)
-			{
-				lod_entries[iter->name] = std::tie(filename, *iter);
-			}
-		}
-		catch (...)
-		{
-			// ignore
-		}
-	}
-
-	Homm3MapSingleton::getInstance()->lod_entries = std::move(lod_entries);
+	Homm3MapSingleton::getInstance()->setDataArchives(files);
 }
 
 bool Homm3Map::isMapLoaded() const

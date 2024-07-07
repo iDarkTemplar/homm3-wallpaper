@@ -1,6 +1,6 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
@@ -46,21 +46,14 @@ int main(int argc, char **argv)
 		}
 
 		{
-			std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
+			QStringList files_list;
 
 			for (int i = 2; i < argc; ++i)
 			{
-				CFileInputStream file_stream{std::filesystem::path(argv[i])};
-				CBinaryReader reader(&file_stream);
-				std::vector<LodEntry> files = read_lod_archive_header(reader);
-
-				for (auto iter = files.begin(); iter != files.end(); ++iter)
-				{
-					lod_entries[iter->name] = std::tie(argv[i], *iter);
-				}
+				files_list.push_back(QString::fromLocal8Bit(argv[i]));
 			}
 
-			Homm3MapSingleton::getInstance()->lod_entries = std::move(lod_entries);
+			Homm3MapSingleton::getInstance()->setDataArchives(files_list);
 		}
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

@@ -1,6 +1,6 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
@@ -12,6 +12,7 @@
 #include <mutex>
 
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
 
 #include "vcmi/CMap.h"
 
@@ -23,6 +24,8 @@ public:
 	static std::shared_ptr<Homm3MapSingleton> getInstance();
 
 	std::map<std::string, std::tuple<std::string, LodEntry> > lod_entries;
+
+	void setDataArchives(const QStringList &files);
 
 private:
 	Homm3MapSingleton() = default;
