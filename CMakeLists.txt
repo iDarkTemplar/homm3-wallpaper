@@ -95,9 +95,9 @@ target_link_libraries(homm3mapplugin homm3map Qt6::Quick)
 
 set_target_properties(homm3mapplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME})
 add_custom_target(copy_qmldir
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/qmldir ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME}/qmldir
-	SOURCES qmldir
-	DEPENDS qmldir)
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/plugin/qmldir ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME}/qmldir
+	SOURCES plugin/qmldir
+	DEPENDS plugin/qmldir)
 
 add_dependencies(homm3mapplugin copy_qmldir)
 
@@ -106,7 +106,7 @@ add_custom_target(wallpaper
 	wallpaper/contents/config/main.xml
 	wallpaper/contents/ui/config.qml
 	wallpaper/contents/ui/main.qml
-	wallpaper/metadata.desktop
+	wallpaper/metadata.json
 	)
 
 get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
@@ -119,6 +119,6 @@ if (VIEWER)
 endif (VIEWER)
 
 install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
-install(FILES qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
+install(FILES plugin/qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
 
 plasma_install_package(wallpaper homm3mapwallpaper wallpapers wallpaper)

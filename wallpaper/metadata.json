@@ -1,0 +1,19 @@
+{
+    "KPackageStructure": "Plasma/Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "darktemplar@dark-templar-archives.net",
+                "Name": "i.Dark_Templar"
+            }
+        ],
+        "Category": "",
+        "EnabledByDefault": true,
+        "Icon": "preferences-desktop-wallpaper",
+        "Id": "homm3mapwallpaper",
+        "License": "GPLv3+",
+        "Name": "HOMM 3 Map Wallpaper",
+        "Description": "HOMM 3 Map Wallpaper",
+        "Website": "https://github.com/iDarkTemplar/homm3-wallpaper/"
+    }
+}

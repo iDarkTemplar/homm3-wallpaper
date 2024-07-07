@@ -56,10 +56,6 @@ int main(int argc, char **argv)
 			Homm3MapSingleton::getInstance()->setDataArchives(files_list);
 		}
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-		QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
-
 		QGuiApplication app(argc, argv);
 
 		qmlRegisterType<Homm3Map>("homm3mapprivate", 1, 0, "Homm3Map");
