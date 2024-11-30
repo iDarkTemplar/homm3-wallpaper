@@ -16,6 +16,10 @@ find_package(Plasma 6.1.2 REQUIRED)
 
 option(VIEWER "Build HOMM3 map viewer application" true)
 
+if (VIEWER)
+	find_package(Qt6 COMPONENTS Widgets QuickWidgets REQUIRED)
+endif (VIEWER)
+
 set(LIBRARY_SOURCES
 	data_maps.cpp
 	def_file.cpp
@@ -61,11 +65,20 @@ set(LIBRARY_HEADERS
 
 set(APP_SOURCES
 	main.cpp
+	mainwindow.cpp
+	)
+
+set(APP_HEADERS
+	mainwindow.h
+	)
+
+set(APP_UI
+	mainwindow.ui
 	)
 
 set(APP_RESOURCES
 	qml.qrc
-)
+	)
 
 set(PLUGIN_SOURCES
 	plugin.cpp
@@ -85,9 +98,12 @@ target_link_libraries(homm3map ZLIB::ZLIB Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Qu
 
 if (VIEWER)
 	qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
+	qt_wrap_cpp(MOC_APP_HEADERS ${APP_HEADERS})
+	qt_wrap_ui(CPP_APP_UI ${APP_UI})
 
-	add_executable(homm3map-viewer ${APP_SOURCES} ${COMPILED_APP_RESOURCES})
-	target_link_libraries(homm3map-viewer homm3map Qt6::Gui Qt6::Quick)
+	add_executable(homm3map-viewer ${APP_SOURCES} ${APP_HEADERS} ${CPP_APP_UI} ${MOC_APP_HEADERS} ${COMPILED_APP_RESOURCES})
+	target_include_directories(homm3map-viewer PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+	target_link_libraries(homm3map-viewer homm3map Qt6::Gui Qt6::Widgets Qt6::Quick Qt6::QuickWidgets)
 endif (VIEWER)
 
 add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})

@@ -45,6 +45,7 @@ struct AnimatedItem
 struct MapData
 {
 	std::shared_ptr<CMap> m_map;
+	QString m_name;
 	int m_level = 0;
 
 	std::vector<QVector3D> m_vertices;
@@ -89,12 +90,13 @@ public:
 	Q_INVOKABLE void toggleLevel();
 	Q_INVOKABLE void setDataArchives(const QStringList &files);
 	Q_INVOKABLE bool isMapLoaded() const;
+	Q_INVOKABLE QString currentMapName() const;
 
 	double scale() const;
 	void setScale(double value);
 
 Q_SIGNALS:
-	void loadingFinished();
+	void loadingFinished(QString map_name, int level);
 	void scaleUpdated(double);
 	void startLoadingMap(QString map_name, std::shared_ptr<CMap> map, int level);
 
@@ -109,6 +111,7 @@ private:
 	mutable QMutex m_data_mutex;
 
 	std::shared_ptr<CMap> m_map;
+	QString m_current_map;
 	int m_map_level;
 
 	std::vector<QVector3D> m_vertices;

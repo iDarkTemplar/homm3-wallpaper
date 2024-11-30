@@ -1,6 +1,6 @@
 /*
  * homm3-wallpaper, live HOMM3 wallpaper
- * Copyright (C) 2022 i.Dark_Templar <darktemplar@dark-templar-archives.net>
+ * Copyright (C) 2022-2024 i.Dark_Templar <darktemplar@dark-templar-archives.net>
  *
  * Subject to terms and condition provided in LICENSE.txt
  *
@@ -10,14 +10,9 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import homm3mapprivate 1.0
 
-ApplicationWindow {
-	width: 640
-	height: 480
-	visible: true
-	visibility: "Maximized"
-	title: qsTr("HOMM 3 Wallpaper Viewer")
-
-	background: Image {
+Item {
+	Image {
+		anchors.fill: parent
 		source: "image://homm3/edg.def"
 		fillMode: Image.Tile
 	}
@@ -41,14 +36,8 @@ ApplicationWindow {
 
 			Homm3Map {
 				id: map
+				objectName: "map"
 			}
-		}
-	}
-
-	Component.onCompleted: {
-		if (typeof map_name !== "undefined" && map_name != "")
-		{
-			map.loadMap(map_name, 0);
 		}
 	}
 }

@@ -271,6 +271,7 @@ void Homm3MapLoader::loadMapData(QString map_name, std::shared_ptr<CMap> map, in
 		}
 	}
 
+	result->m_name = map_name;
 	result->m_level = std::min(std::max(level, 0), getMapLevels(result->m_map) - 1);
 
 	// first load all images
@@ -1211,7 +1212,7 @@ void Homm3Map::toggleLevel()
 		return;
 	}
 
-	Q_EMIT startLoadingMap(QString(), m_map, 1 - m_map_level);
+	Q_EMIT startLoadingMap(m_current_map, m_map, 1 - m_map_level);
 }
 
 void Homm3Map::setDataArchives(const QStringList &files)
@@ -1224,6 +1225,13 @@ bool Homm3Map::isMapLoaded() const
 	QMutexLocker guard(&m_data_mutex);
 
 	return static_cast<bool>(m_map);
+}
+
+QString Homm3Map::currentMapName() const
+{
+	QMutexLocker guard(&m_data_mutex);
+
+	return m_current_map;
 }
 
 double Homm3Map::scale() const
@@ -1255,6 +1263,9 @@ void Homm3Map::setScale(double value)
 
 void Homm3Map::mapLoaded(std::shared_ptr<MapData> data)
 {
+	QString map_name;
+	int map_level = 0;
+
 	{
 		QMutexLocker guard(&m_data_mutex);
 
@@ -1264,6 +1275,7 @@ void Homm3Map::mapLoaded(std::shared_ptr<MapData> data)
 		}
 
 		m_map = std::move(data->m_map);
+		m_current_map = std::move(data->m_name);
 		m_map_level = std::move(data->m_level);
 
 		m_vertices = std::move(data->m_vertices);
@@ -1279,9 +1291,12 @@ void Homm3Map::mapLoaded(std::shared_ptr<MapData> data)
 
 		setWidth((getMapWidth(m_map) + 2) * tile_size * m_scale);
 		setHeight((getMapHeight(m_map) + 2) * tile_size * m_scale);
+
+		map_name = m_current_map;
+		map_level = m_map_level;
 	}
 
 	update();
 
-	Q_EMIT loadingFinished();
+	Q_EMIT loadingFinished(map_name, map_level);
 }

@@ -16,18 +16,18 @@
 #include <tuple>
 #include <utility>
 
-#include <QtGui/QGuiApplication>
+#include <QtWidgets/QApplication>
 #include <QtQml/QQmlApplicationEngine>
-#include <QtQml/QQmlContext>
 
 #include "def_file.h"
-#include "homm3_image_provider.h"
 #include "homm3map.h"
 #include "homm3singleton.h"
 #include "lod_archive.h"
 
 #include "vcmi/CBinaryReader.h"
 #include "vcmi/CFileInputStream.h"
+
+#include "mainwindow.h"
 
 int main(int argc, char **argv)
 {
@@ -56,25 +56,15 @@ int main(int argc, char **argv)
 			Homm3MapSingleton::getInstance()->setDataArchives(files_list);
 		}
 
-		QGuiApplication app(argc, argv);
+		QApplication app(argc, argv);
 
 		qmlRegisterType<Homm3Map>("homm3mapprivate", 1, 0, "Homm3Map");
 
-		QQmlApplicationEngine engine;
+		MainWindow mainWindow;
 
-		engine.addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider);
+		mainWindow.setMap(QString::fromLocal8Bit(argv[1]));
 
-		engine.rootContext()->setContextProperty(QStringLiteral("map_name"), QString::fromLocal8Bit(argv[1]));
-
-		const QUrl url(QStringLiteral("qrc:/main.qml"));
-
-		QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app, [url](QObject *obj, const QUrl &objUrl) {
-			if ((!obj) && (url == objUrl)) {
-				QCoreApplication::exit(-1);
-			}
-		}, Qt::QueuedConnection);
-
-		engine.load(url);
+		mainWindow.show();
 
 		return app.exec();
 	}
