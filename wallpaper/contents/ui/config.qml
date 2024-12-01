@@ -49,7 +49,8 @@ ColumnLayout {
 		id: archive_dialog
 		visible: false
 		fileMode: FileDialog.OpenFiles
-		title: i18nd("homm3mapwallpaper", "Please choose a file")
+		title: i18nd("homm3mapwallpaper", "Please choose archive file(s)")
+		nameFilters: ["Archive files (*.lod)"]
 
 		onAccepted: {
 			cfg_DataArchives = cfg_DataArchives.concat(selectedFiles);
@@ -60,7 +61,8 @@ ColumnLayout {
 		id: map_dialog
 		visible: false
 		fileMode: FileDialog.OpenFiles
-		title: i18nd("homm3mapwallpaper", "Please choose a file")
+		title: i18nd("homm3mapwallpaper", "Please choose map file(s)")
+		nameFilters: ["Map files (*.h3m)"]
 
 		onAccepted: {
 			cfg_MapList = cfg_MapList.concat(selectedFiles);
@@ -89,6 +91,9 @@ ColumnLayout {
 						text: modelData
 					}
 					ScrollBar.vertical: ScrollBar {
+						active: true
+					}
+					ScrollBar.horizontal: ScrollBar {
 						active: true
 					}
 				}
@@ -130,6 +135,9 @@ ColumnLayout {
 						text: modelData
 					}
 					ScrollBar.vertical: ScrollBar {
+						active: true
+					}
+					ScrollBar.horizontal: ScrollBar {
 						active: true
 					}
 				}

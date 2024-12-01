@@ -1234,6 +1234,13 @@ QString Homm3Map::currentMapName() const
 	return m_current_map;
 }
 
+int Homm3Map::mapLevel() const
+{
+	QMutexLocker guard(&m_data_mutex);
+
+	return m_map_level;
+}
+
 double Homm3Map::scale() const
 {
 	return m_scale;

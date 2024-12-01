@@ -66,14 +66,17 @@ set(LIBRARY_HEADERS
 set(APP_SOURCES
 	main.cpp
 	mainwindow.cpp
+	settingswindow.cpp
 	)
 
 set(APP_HEADERS
 	mainwindow.h
+	settingswindow.h
 	)
 
 set(APP_UI
 	mainwindow.ui
+	settingswindow.ui
 	)
 
 set(APP_RESOURCES

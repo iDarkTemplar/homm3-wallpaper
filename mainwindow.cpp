@@ -15,19 +15,43 @@
 
 #include "homm3_image_provider.h"
 #include "homm3map.h"
+#include "homm3singleton.h"
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, ui(new Ui::MainWindow)
+	, m_settings(QStringLiteral("homm3map-viewer"))
 {
 	ui->setupUi(this);
+
+	Homm3MapSingleton::getInstance()->setDataArchives(m_settings.value(QStringLiteral("Archives"), QStringList()).toStringList());
+
+	m_settings_window.setWindowModality(Qt::ApplicationModal);
 
 	ui->quickWidget->engine()->addImageProvider(QStringLiteral("homm3"), new Homm3ImageProvider);
 	ui->quickWidget->setSource(QStringLiteral("qrc:/main.qml"));
 
+	auto *map = getMapObject();
+	if (map != nullptr)
+	{
+		QObject::connect(map, &Homm3Map::loadingFinished, this, &MainWindow::setLastMap);
+	}
+
+	{
+		auto map_name = m_settings.value(QStringLiteral("LastMap"), QString()).toString();
+		if (!map_name.isEmpty())
+		{
+			setMap(map_name, m_settings.value(QStringLiteral("LastLevel"), 0).toInt());
+		}
+	}
+
 	QObject::connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openMapDialog);
+	QObject::connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::openSettingsWindow);
 	QObject::connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
 	QObject::connect(ui->actionToggle_level, &QAction::triggered, this, &MainWindow::toggleMapLevel);
+
+	QObject::connect(&m_settings_window, &SettingsWindow::accepted, this, &MainWindow::settingsUpdated);
+
 }
 
 MainWindow::~MainWindow()
@@ -37,20 +61,26 @@ MainWindow::~MainWindow()
 
 void MainWindow::openMapDialog()
 {
-	QString map_name = QFileDialog::getOpenFileName(this, QObject::tr("Open map file"), QString(), QObject::tr("Map files (*.h3m)"));
-
+	QString map_name = QFileDialog::getOpenFileName(this, QObject::tr("Open map file"), QString(), QObject::tr("Map file (*.h3m)"));
 	if (map_name.isEmpty())
 	{
 		return;
 	}
 
-	auto map = getMapObject();
-	if (map == nullptr)
+	setMap(map_name, 0);
+}
+
+void MainWindow::openSettingsWindow()
+{
+	if (m_settings_window.isVisible())
 	{
 		return;
 	}
 
-	map->loadMap(map_name, 0);
+	QStringList values = m_settings.value(QStringLiteral("Archives"), QStringList()).toStringList();
+
+	m_settings_window.setItems(values);
+	m_settings_window.show();
 }
 
 Homm3Map* MainWindow::getMapObject() const
@@ -66,7 +96,7 @@ Homm3Map* MainWindow::getMapObject() const
 	return map;
 }
 
-void MainWindow::setMap(const QString &name)
+void MainWindow::setMap(const QString &name, int level)
 {
 	auto map = getMapObject();
 	if (map == nullptr)
@@ -74,7 +104,7 @@ void MainWindow::setMap(const QString &name)
 		return;
 	}
 
-	map->loadMap(name, 0);
+	map->loadMap(name, level);
 }
 
 void MainWindow::toggleMapLevel()
@@ -86,4 +116,37 @@ void MainWindow::toggleMapLevel()
 	}
 
 	map->toggleLevel();
+}
+
+void MainWindow::settingsUpdated()
+{
+	QStringList values = m_settings_window.getItems();
+
+	m_settings.setValue(QStringLiteral("Archives"), values);
+
+	// reload main view
+	Homm3MapSingleton::getInstance()->setDataArchives(values);
+
+	auto map = getMapObject();
+	QString map_name = map->currentMapName();
+	int level = map->mapLevel();
+
+	ui->quickWidget->setSource(QStringLiteral("qrc:/main.qml"));
+
+	map = getMapObject();
+	if (map != nullptr)
+	{
+		QObject::connect(map, &Homm3Map::loadingFinished, this, &MainWindow::setLastMap);
+
+		if (!map_name.isEmpty())
+		{
+			map->loadMap(map_name, level);
+		}
+	}
+}
+
+void MainWindow::setLastMap(QString name, int level)
+{
+	m_settings.setValue(QStringLiteral("LastMap"), name);
+	m_settings.setValue(QStringLiteral("LastLevel"), level);
 }

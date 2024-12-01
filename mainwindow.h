@@ -10,6 +10,9 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtCore/QString>
+#include <QtCore/QSettings>
+
+#include "settingswindow.h"
 
 namespace Ui {
 class MainWindow;
@@ -26,12 +29,20 @@ public:
 	~MainWindow();
 
 	void openMapDialog();
+	void openSettingsWindow();
 
-	void setMap(const QString &name);
+	void setMap(const QString &name, int level = 0);
 	void toggleMapLevel();
+
+	void settingsUpdated();
+
+	void setLastMap(QString name, int level);
 
 private:
 	Ui::MainWindow *ui;
+
+	QSettings m_settings;
+	SettingsWindow m_settings_window;
 
 	Homm3Map* getMapObject() const;
 };

@@ -91,6 +91,7 @@ public:
 	Q_INVOKABLE void setDataArchives(const QStringList &files);
 	Q_INVOKABLE bool isMapLoaded() const;
 	Q_INVOKABLE QString currentMapName() const;
+	Q_INVOKABLE int mapLevel() const;
 
 	double scale() const;
 	void setScale(double value);
