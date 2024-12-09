@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="qml.qrc">
+    <normaloff>:/homm3map-viewer.svg</normaloff>:/homm3map-viewer.svg</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="3" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -51,6 +55,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="qml.qrc"/>
+ </resources>
  <connections/>
 </ui>

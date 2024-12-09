@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="qml.qrc">
+    <normaloff>:/homm3map-viewer.svg</normaloff>:/homm3map-viewer.svg</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
@@ -73,7 +77,7 @@
   </action>
   <action name="actionToggle_level">
    <property name="text">
-    <string>Toggle level (Right mouse button)</string>
+    <string>&amp;Toggle level (Right mouse button)</string>
    </property>
   </action>
  </widget>
@@ -84,6 +88,8 @@
    <header location="global">QtQuickWidgets/QQuickWidget</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="qml.qrc"/>
+ </resources>
  <connections/>
 </ui>
