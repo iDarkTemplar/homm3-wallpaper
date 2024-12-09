@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=HOMM3 Map Viewer
+Comment=View HOMM3 maps
+Exec=homm3map-viewer
+Icon=homm3map-viewer
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Game;Qt

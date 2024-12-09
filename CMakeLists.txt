@@ -135,6 +135,9 @@ include(GNUInstallDirs)
 
 if (VIEWER)
 	install(TARGETS homm3map-viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/homm3map-viewer.desktop DESTINATION share/applications)
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/homm3map-viewer.svg DESTINATION share/icons/hicolor/scalable/apps)
 endif (VIEWER)
 
 install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
