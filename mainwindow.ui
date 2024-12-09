@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>HOMM3 Map Viewer</string>
   </property>
   <property name="windowIcon">
    <iconset resource="qml.qrc">
