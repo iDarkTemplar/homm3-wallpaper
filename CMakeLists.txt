@@ -6,15 +6,23 @@ project(homm3-wallpaper
 
 set(CMAKE_CXX_STANDARD 17)
 
+option(WALLPAPER "Build HOMM3 map wallpaper for KDE" true)
+option(VIEWER "Build HOMM3 map viewer application" true)
+
 set(QML_PLUGIN_NAME "homm3map")
 
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
 find_package(Qt6 COMPONENTS Core Gui OpenGL Quick REQUIRED)
-find_package(Plasma 6.1.2 REQUIRED)
 
-option(VIEWER "Build HOMM3 map viewer application" true)
+if (NOT WALLPAPER AND NOT VIEWER)
+	message(FATAL_ERROR "Both WALLPAPER and VIEWER are disabled")
+endif (NOT WALLPAPER AND NOT VIEWER)
+
+if (WALLPAPER)
+	find_package(Plasma 6.1.2 REQUIRED)
+endif (WALLPAPER)
 
 if (VIEWER)
 	find_package(Qt6 COMPONENTS Widgets QuickWidgets REQUIRED)
@@ -94,10 +102,32 @@ set(PLUGIN_HEADERS
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
 qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
-qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
 
 add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
 target_link_libraries(homm3map ZLIB::ZLIB Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Quick)
+
+if (WALLPAPER)
+	qt_wrap_cpp(MOC_PLUGIN_HEADERS ${PLUGIN_HEADERS})
+
+	add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})
+	target_link_libraries(homm3mapplugin homm3map Qt6::Quick)
+
+	set_target_properties(homm3mapplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME})
+	add_custom_target(copy_qmldir
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/plugin/qmldir ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME}/qmldir
+		SOURCES plugin/qmldir
+		DEPENDS plugin/qmldir)
+
+	add_dependencies(homm3mapplugin copy_qmldir)
+
+	add_custom_target(wallpaper
+		SOURCES
+		wallpaper/contents/config/main.xml
+		wallpaper/contents/ui/config.qml
+		wallpaper/contents/ui/main.qml
+		wallpaper/metadata.json
+	)
+endif (WALLPAPER)
 
 if (VIEWER)
 	qt_add_resources(COMPILED_APP_RESOURCES ${APP_RESOURCES})
@@ -109,29 +139,17 @@ if (VIEWER)
 	target_link_libraries(homm3map-viewer homm3map Qt6::Gui Qt6::Widgets Qt6::Quick Qt6::QuickWidgets)
 endif (VIEWER)
 
-add_library(homm3mapplugin MODULE ${PLUGIN_SOURCES} ${PLUGIN_HEADERS} ${MOC_PLUGIN_HEADERS})
-target_link_libraries(homm3mapplugin homm3map Qt6::Quick)
-
-set_target_properties(homm3mapplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME})
-add_custom_target(copy_qmldir
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/plugin/qmldir ${CMAKE_CURRENT_BINARY_DIR}/import/${QML_PLUGIN_NAME}/qmldir
-	SOURCES plugin/qmldir
-	DEPENDS plugin/qmldir)
-
-add_dependencies(homm3mapplugin copy_qmldir)
-
-add_custom_target(wallpaper
-	SOURCES
-	wallpaper/contents/config/main.xml
-	wallpaper/contents/ui/config.qml
-	wallpaper/contents/ui/main.qml
-	wallpaper/metadata.json
-	)
-
 get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
 execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 include(GNUInstallDirs)
+
+if (WALLPAPER)
+	install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
+	install(FILES plugin/qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
+
+	plasma_install_package(wallpaper homm3mapwallpaper wallpapers wallpaper)
+endif (WALLPAPER)
 
 if (VIEWER)
 	install(TARGETS homm3map-viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -139,8 +157,3 @@ if (VIEWER)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/homm3map-viewer.desktop DESTINATION share/applications)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/homm3map-viewer.svg DESTINATION share/icons/hicolor/scalable/apps)
 endif (VIEWER)
-
-install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
-install(FILES plugin/qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
-
-plasma_install_package(wallpaper homm3mapwallpaper wallpapers wallpaper)
