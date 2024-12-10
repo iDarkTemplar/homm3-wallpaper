@@ -9,9 +9,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QtCore/QTimer>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlContext>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
 
 #include "homm3_image_provider.h"
 #include "homm3map.h"
@@ -24,7 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	ui->setupUi(this);
 
-	Homm3MapSingleton::getInstance()->setDataArchives(m_settings.value(QStringLiteral("Archives"), QStringList()).toStringList());
+	auto data_archives = m_settings.value(QStringLiteral("Archives"), QStringList()).toStringList();
+
+	Homm3MapSingleton::getInstance()->setDataArchives(data_archives);
 
 	m_settings_window.setWindowModality(Qt::ApplicationModal);
 
@@ -52,6 +56,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 	QObject::connect(&m_settings_window, &SettingsWindow::accepted, this, &MainWindow::settingsUpdated);
 
+	if (data_archives.isEmpty())
+	{
+		QTimer::singleShot(0,[](){
+			QMessageBox::warning(
+				nullptr,
+				QObject::tr("Configuration warning"),
+				QObject::tr("No HOMM3 data archives are set.\nGo to menu 'File' -> 'Settings' and add required data archives.\nAfter that a map may be opened via 'File' -> 'Open' menu."));
+		});
+	}
 }
 
 MainWindow::~MainWindow()
