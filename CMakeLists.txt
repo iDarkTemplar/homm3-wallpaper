@@ -1,7 +1,6 @@
 cmake_minimum_required( VERSION 3.18.0 )
 
 project(homm3-wallpaper
-	VERSION 0.1.0
 	LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -50,7 +49,6 @@ set(LIBRARY_HEADERS
 	def_file.h
 	globals.h
 	homm3_image_provider.h
-	homm3map.h
 	homm3singleton.h
 	lod_archive.h
 	random.h
@@ -69,6 +67,10 @@ set(LIBRARY_HEADERS
 	vcmi/MapFormatH3M.h
 	vcmi/ObjectTemplate.h
 	vcmi/int3.h
+	)
+
+set(QT_LIBRARY_HEADERS
+	homm3map.h
 	)
 
 set(APP_SOURCES
@@ -101,9 +103,9 @@ set(PLUGIN_HEADERS
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
 
-qt_wrap_cpp(MOC_LIBRARY_HEADERS ${LIBRARY_HEADERS})
+qt_wrap_cpp(MOC_LIBRARY_HEADERS ${QT_LIBRARY_HEADERS})
 
-add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
+add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${QT_LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
 target_link_libraries(homm3map ZLIB::ZLIB Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Quick)
 
 if (WALLPAPER)
@@ -139,12 +141,12 @@ if (VIEWER)
 	target_link_libraries(homm3map-viewer homm3map Qt6::Gui Qt6::Widgets Qt6::Quick Qt6::QuickWidgets)
 endif (VIEWER)
 
-get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
-execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
-
 include(GNUInstallDirs)
 
 if (WALLPAPER)
+	get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+	execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_QML OUTPUT_VARIABLE QT_INSTALL_QML OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 	install(TARGETS homm3mapplugin LIBRARY DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
 	install(FILES plugin/qmldir DESTINATION ${QT_INSTALL_QML}/${QML_PLUGIN_NAME})
 
