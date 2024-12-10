@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <boost/noncopyable.hpp>
 
 class CInputStream;
 
@@ -21,7 +20,7 @@ class CInputStream;
  * The integers which are read are supposed to be little-endian values permanently. They will be
  * converted to big-endian values on big-endian machines.
  */
-class CBinaryReader: public boost::noncopyable
+class CBinaryReader
 {
 public:
 	/**
@@ -34,7 +33,13 @@ public:
 	 *
 	 * @param stream The base stream object which serves as the reading input.
 	 */
-	CBinaryReader(CInputStream *stream);
+	explicit CBinaryReader(CInputStream *stream);
+
+	/**
+	 * Disable copying
+	 */
+	CBinaryReader(const CBinaryReader &other) = delete;
+	CBinaryReader& operator=(const CBinaryReader &other) = delete;
 
 	/**
 	 * Gets the underlying stream.

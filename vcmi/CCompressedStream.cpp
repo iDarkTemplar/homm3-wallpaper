@@ -11,10 +11,10 @@
 #include "CCompressedStream.h"
 
 #include <limits>
+#include <string>
+#include <stdexcept>
 
 #include <zlib.h>
-
-#include <boost/lexical_cast.hpp>
 
 static const int inflateBlockSize = 10000;
 
@@ -162,7 +162,7 @@ int64_t CCompressedStream::readMore(uint8_t *data, int64_t size)
 		default:
 			if (inflateState->msg == nullptr)
 			{
-				throw std::runtime_error("Decompression error. Return code was " + boost::lexical_cast<std::string>(ret));
+				throw std::runtime_error(std::string("Decompression error. Return code was ") + std::to_string(ret));
 			}
 			else
 			{

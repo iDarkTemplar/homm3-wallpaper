@@ -11,15 +11,24 @@
 
 #include <stdint.h>
 
-#include <boost/noncopyable.hpp>
-
-class CStream: private boost::noncopyable
+class CStream
 {
 public:
+	/**
+	 * C-tor.
+	 */
+	CStream() = default;
+
 	/**
 	 * D-tor.
 	 */
 	virtual ~CStream() = default;
+
+	/**
+	 * Disable copying
+	 */
+	CStream(const CStream &other) = delete;
+	CStream& operator=(const CStream &other) = delete;
 
 	/**
 	 * Seeks to the specified position.

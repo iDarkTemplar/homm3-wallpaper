@@ -10,7 +10,6 @@ option(VIEWER "Build HOMM3 map viewer application" true)
 
 set(QML_PLUGIN_NAME "homm3map")
 
-find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 
 find_package(Qt6 COMPONENTS Core Gui OpenGL Quick REQUIRED)
@@ -101,7 +100,7 @@ set(PLUGIN_HEADERS
 	plugin.h
 	)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 qt_wrap_cpp(MOC_LIBRARY_HEADERS ${QT_LIBRARY_HEADERS})
 
