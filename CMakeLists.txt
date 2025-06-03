@@ -105,6 +105,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 qt_wrap_cpp(MOC_LIBRARY_HEADERS ${QT_LIBRARY_HEADERS})
 
 add_library(homm3map STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} ${QT_LIBRARY_HEADERS} ${MOC_LIBRARY_HEADERS})
+set_property(TARGET homm3map PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(homm3map ZLIB::ZLIB Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Quick)
 
 if (WALLPAPER)
